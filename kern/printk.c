@@ -1,4 +1,3 @@
-#include <drivers/dev_cons.h>
 #include <print.h>
 #include <printk.h>
 #include <trap.h>

@@ -6,12 +6,12 @@ void outputk(void *data, const char *buf, size_t len);
 
 void _panic(const char *file, int line, const char *func, const char *fmt, ...) {
 	u_long sp, ra, badva, sr, cause, epc;
-	// asm("move %0, $29" : "=r"(sp) :);
-	// asm("move %0, $31" : "=r"(ra) :);
-	// asm("mfc0 %0, $8" : "=r"(badva) :);
-	// asm("mfc0 %0, $12" : "=r"(sr) :);
-	// asm("mfc0 %0, $13" : "=r"(cause) :);
-	// asm("mfc0 %0, $14" : "=r"(epc) :);
+	asm("add %0, zero, sp" : "=r"(sp) :);
+	asm("add %0, zero, ra" : "=r"(ra) :);
+	asm("csrr %0, sstatus" : "=r"(sr) :);
+	asm("csrr %0, scause" : "=r"(cause) :);
+	asm("csrr %0, stval" : "=r"(badva) :);
+	asm("csrr %0, sepc" : "=r"(epc) :);
 
 	printk("panic at %s:%d (%s): ", file, line, func);
 
