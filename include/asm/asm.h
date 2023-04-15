@@ -1,4 +1,3 @@
-#include <asm/cp0regdef.h>
 #include <asm/regdef.h>
 
 /*
@@ -8,9 +7,7 @@
 	.globl symbol;                                                                             \
 	.align 2;                                                                                  \
 	.type symbol, @function;                                                                   \
-	.ent symbol;                                                                               \
-	symbol:                                                                                    \
-	.frame sp, 0, ra
+	symbol:
 
 /*
  * NESTED - declare nested routine entry point
@@ -19,9 +16,7 @@
 	.globl symbol;                                                                             \
 	.align 2;                                                                                  \
 	.type symbol, @function;                                                                   \
-	.ent symbol;                                                                               \
-	symbol:                                                                                    \
-	.frame sp, framesize, rpc
+	symbol:
 
 /*
  * END - mark end of function

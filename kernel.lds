@@ -1,25 +1,23 @@
-/*
- * Set the architecture to mips.
- */
-OUTPUT_ARCH(mips)
+OUTPUT_ARCH(riscv)
 
-/*
- * Set the ENTRY point of the program to _start.
- */
 ENTRY(_start)
 
 SECTIONS {
-	/* Exercise 3.10: Your code here. */
+    kernel_start = .;
+    . = 0x80200000;
+    .text : {
+        *(.boot)
+        *(.text)
+    }
 
-	/* fill in the correct address of the key sections: text, data, bss. */
-	/* Exercise 1.2: Your code here. */
-	. = 0x80010000;
-	.text : { *(.text) }
-	/* . = 0x80300000; */
-	.data : { *(.data) }
-	.bss : { *(.bss) }
+    .data : {
+        *(.data .data* .sdata .sdata*)
+    }
 
-	bss_end = .;
-	. = 0x80400000;
-	end = . ;
+    .bss  : {
+        *(.bss .bss* .sbss .sbss*)
+    }
+    bss_end = .;
+    . = 0x80600000;
+    end = . ;
 }
