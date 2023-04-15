@@ -5,7 +5,8 @@ CROSS_COMPILE  := riscv64-unknown-elf-
 CC             := $(CROSS_COMPILE)gcc
 CFLAGS         := --std=gnu99 -march=rv32gc -mabi=ilp32 -Wall -fno-pic -ffreestanding -fno-stack-protector -fno-builtin
 LD             := $(CROSS_COMPILE)ld
-LDFLAGS        := -static -nostdlib --fatal-warnings -melf32lriscv
+LDFLAGS        := -static -nostdlib --fatal-warnings -melf32lriscv -Lsbi_bin
+LDLIBS         := -lsbi -lplatsbi
 
 HOST_CC        := cc
 HOST_CFLAGS    += --std=gnu99 -O2 -Wall
