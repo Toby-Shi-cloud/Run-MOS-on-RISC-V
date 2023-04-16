@@ -1,7 +1,7 @@
 #ifndef _printk_h_
 #define _printk_h_
 
-#include <drivers/console.h>
+#include <console.h>
 #include <stdarg.h>
 
 void printk(const char *fmt, ...);
