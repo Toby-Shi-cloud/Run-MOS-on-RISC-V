@@ -1,7 +1,7 @@
 #include <asm/asm.h>
 #include <mmu.h>
 
-.section .text
+.section .text._start
 EXPORT(_start)
 	/* disable interrupts */
 	csrwi	sstatus, 0

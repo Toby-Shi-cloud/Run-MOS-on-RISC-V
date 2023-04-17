@@ -5,6 +5,11 @@ ENTRY(_start)
 SECTIONS {
     kernel_start = .;
     . = 0x80200000;
+
+    ._start : {
+        *(.text._start)
+    }
+
     .text : {
         *(.boot)
         *(.text)

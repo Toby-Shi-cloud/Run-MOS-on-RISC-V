@@ -7,7 +7,7 @@ mos_elf                 := $(target_dir)/mos
 user_disk               := $(target_dir)/fs.img
 link_script             := kernel.lds
 
-modules                 := init lib kern
+modules                 := lib init kern
 targets                 := $(mos_elf)
 syms_file               := $(target_dir)/prog.syms
 
