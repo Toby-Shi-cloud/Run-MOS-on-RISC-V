@@ -1,9 +1,9 @@
 lab-ge = $(shell [ "$$(echo $(lab)_ | cut -f1 -d_)" -ge $(1) ] && echo true)
 
-targets             := sbi.o console.o printk.o panic.o
+targets             := console.o printk.o panic.o
 
 ifeq ($(call lab-ge,2), true)
-	targets     += pmap.o tlb_asm.o tlbex.o
+	targets     += pmap.o tlbex.o
 endif
 
 ifeq ($(call lab-ge,3), true)

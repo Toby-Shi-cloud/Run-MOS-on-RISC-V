@@ -7,7 +7,7 @@ mos_elf                 := $(target_dir)/mos
 user_disk               := $(target_dir)/fs.img
 link_script             := kernel.lds
 
-modules                 := init lib kern
+modules                 := lib init kern
 targets                 := $(mos_elf)
 syms_file               := $(target_dir)/prog.syms
 
@@ -27,7 +27,7 @@ ifeq ($(call lab-ge,5),true)
 endif
 
 qemu_bin                := qemu-system-riscv32
-opensbi                 := opensbi/build/platform/generic/firmware/fw_dynamic.bin
+opensbi                 := sbi_bin/fw_dynamic.bin
 qemu_flags              += -machine virt -m 64M -nographic -bios $(opensbi)
 CFLAGS                  += -DLAB=$(shell echo $(lab) | cut -f1 -d_)
 
@@ -46,7 +46,8 @@ test: clean-and-all
 include mk/tests.mk mk/profiles.mk
 export CC CFLAGS LD LDFLAGS lab
 
-all: $(targets)
+all: $(targets) objdump
+	nm target/mos > target/mos.map
 
 $(target_dir):
 	mkdir -p $@
@@ -58,7 +59,7 @@ $(modules): tools
 	$(MAKE) --directory=$@
 
 $(mos_elf): $(modules) $(target_dir)
-	$(LD) $(LDFLAGS) -o $(mos_elf) -T $(link_script) $(objects)
+	$(LD) $(LDFLAGS) -o $(mos_elf) -T $(link_script) $(objects) $(LDLIBS)
 
 fs-image: $(target_dir) user
 	$(MAKE) --directory=fs image fs-files="$(addprefix ../, $(fs-files))"
