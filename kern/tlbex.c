@@ -1,55 +1,6 @@
 #include <env.h>
 #include <pmap.h>
 
-static void passive_alloc(u_int va, Pde *pgdir, u_int asid) {
-	struct Page *p = NULL;
-
-	if (va < UTEMP) {
-		panic("address too low");
-	}
-
-	if (va >= USTACKTOP && va < USTACKTOP + BY2PG) {
-		panic("invalid memory");
-	}
-
-	if (va >= UENVS && va < UPAGES) {
-		panic("envs zone");
-	}
-
-	if (va >= UPAGES && va < UVPT) {
-		panic("pages zone");
-	}
-
-	if (va >= ULIM) {
-		panic("kernel address");
-	}
-
-	panic_on(page_alloc(&p));
-	panic_on(page_insert(pgdir, asid, p, PTE_ADDR(va), PTE_D));
-}
-
-/* Overview:
- *  Refill TLB.
- */
-Pte _do_tlb_refill(u_long va, u_int asid) {
-	Pte *pte;
-	/* Hints:
-	 *  Invoke 'page_lookup' repeatedly in a loop to find the page table entry 'pte' associated
-	 *  with the virtual address 'va' in the current address space 'cur_pgdir'.
-	 *
-	 *  **While** 'page_lookup' returns 'NULL', indicating that the 'pte' could not be found,
-	 *  allocate a new page using 'passive_alloc' until 'page_lookup' succeeds.
-	 */
-
-	/* Exercise 2.9: Your code here. */
-	while (page_lookup(cur_pgdir, va, &pte) == NULL) {
-		// If the page table entry is not present, allocate a new page using 'passive_alloc'
-		passive_alloc(va, cur_pgdir, asid);
-	}
-
-	return *pte;
-}
-
 #if !defined(LAB) || LAB >= 4
 /* Overview:
  *   This is the TLB Mod exception handler in kernel.

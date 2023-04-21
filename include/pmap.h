@@ -26,7 +26,7 @@ extern struct Page *pages;
 extern struct Page_list page_free_list;
 
 static inline u_long page2ppn(struct Page *pp) {
-	return pp - pages;
+	return pp - pages + PPN(KERNBASE);
 }
 
 static inline u_long page2pa(struct Page *pp) {
@@ -34,10 +34,10 @@ static inline u_long page2pa(struct Page *pp) {
 }
 
 static inline struct Page *pa2page(u_long pa) {
-	if (PPN(pa) >= npage) {
+	if (PPN(pa - KERNBASE) >= npage) {
 		panic("pa2page called with invalid pa: %x", pa);
 	}
-	return &pages[PPN(pa)];
+	return &pages[PPN(pa - KERNBASE)];
 }
 
 static inline u_long page2kva(struct Page *pp) {

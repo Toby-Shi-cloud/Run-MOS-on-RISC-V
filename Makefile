@@ -46,7 +46,8 @@ test: clean-and-all
 include mk/tests.mk mk/profiles.mk
 export CC CFLAGS LD LDFLAGS lab
 
-all: $(targets)
+all: $(targets) objdump
+	nm target/mos > target/mos.map
 
 $(target_dir):
 	mkdir -p $@

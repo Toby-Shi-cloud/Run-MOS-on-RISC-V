@@ -3,26 +3,26 @@ OUTPUT_ARCH(riscv)
 ENTRY(_start)
 
 SECTIONS {
-    kernel_start = .;
     . = 0x80200000;
 
-    ._start : {
-        *(.text._start)
-    }
-
-    .text : {
-        *(.boot)
+    .text : ALIGN(0x1000) {
+        _text = .;
+        *(.text.start)
+        *(.text.entry)
         *(.text)
     }
 
-    .data : {
+    .data : ALIGN(0x1000) {
+        _data = .;
         *(.data .data* .sdata .sdata*)
     }
 
-    .bss  : {
+    .bss : ALIGN(0x1000) {
+        _bss = .;
         *(.bss .bss* .sbss .sbss*)
     }
-    bss_end = .;
+
+    _bss_end = .;
     . = 0x80600000;
-    end = . ;
+    end = .;
 }

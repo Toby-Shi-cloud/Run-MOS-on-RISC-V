@@ -1,11 +1,10 @@
-#include <drivers/dev_mp.h>
 #include <env.h>
 #include <mmu.h>
 #include <pmap.h>
 #include <printk.h>
 
 /* These variables are set by mips_detect_memory() */
-static u_long memsize; /* Maximum physical address */
+static u_long memsize; /* Porting note: max_paddr = memsize + ULIM */
 u_long npage;	       /* Amount of memory(in pages) */
 
 Pde *cur_pgdir;
@@ -15,19 +14,22 @@ static u_long freemem;
 
 struct Page_list page_free_list; /* Free list of physical pages */
 
+// kernel pgdir.
+Pde kernel_pgdir[1024] __attribute__((__aligned__(0x1000)));
+
 /* Overview:
  *   Read memory size from DEV_MP to initialize 'memsize' and calculate the corresponding 'npage'
  *   value.
  */
 void mips_detect_memory() {
 	/* Step 1: Initialize memsize. */
-	memsize = *(volatile u_int *)(KSEG1 | DEV_MP_ADDRESS | DEV_MP_MEMORY);
-
-	/* Step 2: Calculate the corresponding 'npage' value. */
-	/* Exercise 2.1: Your code here. */
-	npage = memsize / BY2PG;
+	memsize = PMEMSIZE;
 	
-	printk("Memory size: %lu KiB, number of pages: %lu\n", memsize / 1024, npage);
+	/* Step 2: Calculate the corresponding 'npage' value. */
+	npage = (memsize - OPENSBISIZE) / BY2PG;
+	
+	printk("Totol Memory size: %lu KiB\n", memsize / 1024);
+	printk("Number of kernel pages: %lu\n", npage);
 }
 
 /* Overview:
@@ -43,7 +45,7 @@ void *alloc(u_int n, u_int align, int clear) {
 	/* Initialize `freemem` if this is the first time. The first virtual address that the
 	 * linker did *not* assign to any kernel code or global variables. */
 	if (freemem == 0) {
-		freemem = (u_long)end; // end
+		freemem = (u_long)end; // _end in kernel.lds
 	}
 
 	/* Step 1: Round up `freemem` up to be aligned properly */
@@ -56,7 +58,7 @@ void *alloc(u_int n, u_int align, int clear) {
 	freemem = freemem + n;
 
 	// Panic if we're out of memory.
-	panic_on(PADDR(freemem) >= memsize);
+	panic_on(freemem >= ULIM + memsize);
 
 	/* Step 4: Clear allocated chunk if parameter `clear` is set. */
 	if (clear) {
@@ -68,16 +70,61 @@ void *alloc(u_int n, u_int align, int clear) {
 }
 
 /* Overview:
-    Set up two-level page table.
-   Hint:
-    You can get more details about `UPAGES` and `UENVS` in include/mmu.h. */
+ *   Create mapping.
+ *   Map [va, va + sz) to [pa, pa + sz) with perm | PTE_V of pgdir.
+ */
+static void riscv_create_mapping(Pde *pgdir, u_int va, u_int pa, u_int sz, int perm) {
+	Pte *pte;
+	Pde *pgdir_entryp;
+	for (u_int i = 0; i < sz; i += BY2PG) {
+		pgdir_entryp = pgdir + PDX(va + i);
+		if (*pgdir_entryp & PTE_V) {
+			pte = (Pte *)PTE_ADDR(*pgdir_entryp);
+		} else {
+			pte = (Pte *)alloc(BY2PG, BY2PG, 1);
+			*pgdir_entryp = ADDR_PTE((u_int)pte) | PTE_V;
+		}
+		pte[PTX(va + i)] = ADDR_PTE(pa + i) | perm | PTE_V;
+	}
+}
+
+/* Overview:
+ *   Set up equivariant mapping for kernel.
+ */
+static void riscv_kvm_map() {
+	extern char _text[];
+	extern char _data[];
+	
+	// mapping kernel text...
+	// perm = readable | excutable
+	riscv_create_mapping(kernel_pgdir, (u_int)_text, (u_int)_text, (u_int)_data - (u_int)_text, PTE_R | PTE_X);
+
+	// mapping kernel data and freespace...
+	// perm = readable | writable
+	riscv_create_mapping(kernel_pgdir, (u_int)_data, (u_int)_data, ULIM + memsize - (u_int)_data, PTE_R | PTE_W);
+
+	// turn on virtual memory
+	u_int satp = SV32MODE | PPN((u_int)(kernel_pgdir));
+	asm("mv a0, %0" : : "r"(satp));
+	asm("csrw satp, a0");
+
+	// flush TLB
+	asm volatile("sfence.vma zero, zero");
+
+	// flush icache
+	asm volatile("fence.i");
+}
+
+/* Overview:
+ *   Set up two-level page table.
+ */
 void mips_vm_init() {
 	/* Allocate proper size of physical memory for global array `pages`,
 	 * for physical memory management. Then, map virtual address `UPAGES` to
 	 * physical address `pages` allocated before. For consideration of alignment,
 	 * you should round up the memory size before map. */
 	pages = (struct Page *)alloc(npage * sizeof(struct Page), BY2PG, 1);
-	printk("to memory %x for struct Pages.\n", freemem);
+	riscv_kvm_map();
 	printk("pmap.c:\t mips vm init success\n");
 }
 
@@ -107,7 +154,6 @@ void page_init(void) {
 	/* Exercise 2.3: Your code here. (4/4) */
 	for (; i < npage; i++)
 		LIST_INSERT_HEAD(&page_free_list, &pages[i], pp_link);
-
 }
 
 /* Overview:
@@ -157,7 +203,7 @@ void page_free(struct Page *pp) {
 
 /* Overview:
  *   Given 'pgdir', a pointer to a page directory, 'pgdir_walk' returns a pointer to the page table
- *   entry (with permission PTE_D|PTE_V) for virtual address 'va'.
+ *   entry (with permission PTE_V) for virtual address 'va'.
  *
  * Pre-Condition:
  *   'pgdir' is a two-level page table structure.
@@ -177,23 +223,22 @@ static int pgdir_walk(Pde *pgdir, u_long va, int create, Pte **ppte) {
 
 	/* Step 1: Get the corresponding page directory entry. */
 	/* Exercise 2.6: Your code here. (1/3) */
-	pgdir_entryp = pgdir + (va >> 22);
+	pgdir_entryp = pgdir + PDX(va);
 
 	/* Step 2: If the corresponding page table is not existent (valid) and parameter `create`
-	 * is set, create one. Set the permission bits 'PTE_D | PTE_V' for this new page in the
+	 * is set, create one. Set the permission bits 'PTE_V' for this new page in the
 	 * page directory.
 	 * If failed to allocate a new page (out of memory), return the error. */
 	/* Exercise 2.6: Your code here. (2/3) */
 	*ppte = NULL;
-	if (*pgdir_entryp & PTE_V) {
-		pp = (struct Page *) (*pgdir_entryp & 0xfffff000ul);
-	} else if (create) {
-		try(page_alloc(&pp));
-		pp->pp_ref = 1;
-		*pgdir_entryp = page2pa(pp) | PTE_D | PTE_V;
-	} else {
-		*ppte = 0;
-		return 0;
+	if (!(*pgdir_entryp & PTE_V)) {
+		if (create) {
+			try(page_alloc(&pp));
+			pp->pp_ref = 1;
+			*pgdir_entryp = ADDR_PTE(page2pa(pp)) | PTE_V;
+		} else {
+			return 0;
+		}
 	}
 
 	/* Step 3: Assign the kernel virtual address of the page table entry to '*ppte'. */
@@ -222,11 +267,11 @@ int page_insert(Pde *pgdir, u_int asid, struct Page *pp, u_long va, u_int perm) 
 	pgdir_walk(pgdir, va, 0, &pte);
 
 	if (pte && (*pte & PTE_V)) {
-		if (pa2page(*pte) != pp) {
+		if (pa2page(PTE_ADDR(*pte)) != pp) {
 			page_remove(pgdir, asid, va);
 		} else {
 			tlb_invalidate(asid, va);
-			*pte = page2pa(pp) | perm | PTE_V;
+			*pte = ADDR_PTE(page2pa(pp)) | perm | PTE_V;
 			return 0;
 		}
 	}
@@ -243,7 +288,7 @@ int page_insert(Pde *pgdir, u_int asid, struct Page *pp, u_long va, u_int perm) 
 	/* Step 4: Insert the page to the page table entry with 'perm | PTE_V' and increase its
 	 * 'pp_ref'. */
 	/* Exercise 2.7: Your code here. (3/3) */
-	*pte = page2pa(pp) | perm | PTE_V;
+	*pte = ADDR_PTE(page2pa(pp)) | perm | PTE_V;
 	pp->pp_ref++;
 
 	return 0;
@@ -268,7 +313,7 @@ struct Page *page_lookup(Pde *pgdir, u_long va, Pte **ppte) {
 
 	/* Step 2: Get the corresponding Page struct. */
 	/* Hint: Use function `pa2page`, defined in include/pmap.h . */
-	pp = pa2page(*pte);
+	pp = pa2page(PTE_ADDR(*pte));
 	if (ppte) {
 		*ppte = pte;
 	}
@@ -317,7 +362,8 @@ void page_remove(Pde *pgdir, u_int asid, u_long va) {
  *   'tlb_out' is defined in mm/tlb_asm.S
  */
 void tlb_invalidate(u_int asid, u_long va) {
-	tlb_out(PTE_ADDR(va) | (asid << 6));
+	//todo maybe just reflush?
+	asm volatile("sfence.vma zero, zero");
 }
 
 void physical_memory_manage_check(void) {
