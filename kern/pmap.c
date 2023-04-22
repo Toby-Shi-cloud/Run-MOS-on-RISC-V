@@ -125,7 +125,7 @@ void mips_vm_init() {
 	 * you should round up the memory size before map. */
 	pages = (struct Page *)alloc(npage * sizeof(struct Page), BY2PG, 1);
 	riscv_kvm_map();
-	printk("pmap.c:\t mips vm init success\n");
+	printk("pmap.c: mips vm init success\n");
 }
 
 /* Overview:
@@ -154,6 +154,8 @@ void page_init(void) {
 	/* Exercise 2.3: Your code here. (4/4) */
 	for (; i < npage; i++)
 		LIST_INSERT_HEAD(&page_free_list, &pages[i], pp_link);
+	
+	printk("pmap.c: page_init success\n");
 }
 
 /* Overview:

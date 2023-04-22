@@ -8,8 +8,12 @@ SECTIONS {
     .text : ALIGN(0x1000) {
         _text = .;
         *(.text.start)
-        *(.text.entry)
         *(.text)
+    }
+
+    /* Porting note: use Vectored Interrupt mode in risc-v, 128-byte align is required. */
+    .entry : ALIGN(128) {
+        *(.text.entry)
     }
 
     .data : ALIGN(0x1000) {

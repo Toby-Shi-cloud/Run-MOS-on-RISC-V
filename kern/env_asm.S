@@ -1,0 +1,18 @@
+#include <asm/asm.h>
+#include <mmu.h>
+#include <trap.h>
+
+.text
+FEXPORT(env_pop_tf) // void env_pop_tf(struct Trapframe *tf, u_int asid)
+	//todo finish latter
+	j       ret_from_exception
+
+FEXPORT(enable_irq)
+	// interrupt setup
+        la	t0, exception_handlers
+	ori	t0, t0, 1 // Vectored Interrupt
+        csrw	stvec, t0
+        li	t0, 32
+        csrs	sie, t0
+        csrsi	sstatus, 2
+	jr      ra

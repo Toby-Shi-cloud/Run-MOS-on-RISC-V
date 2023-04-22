@@ -5,6 +5,7 @@
 EXPORT(_start)
 	/* disable interrupts */
 	csrwi	sstatus, 0
+	csrsi	stval, 1	
 
 	/* hint: you can reference the memory layout in include/mmu.h */
 	/* set up the kernel stack */
