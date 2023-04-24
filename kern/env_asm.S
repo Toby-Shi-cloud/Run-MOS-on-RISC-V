@@ -9,8 +9,7 @@ FEXPORT(env_pop_tf) // void env_pop_tf(struct Trapframe *tf, u_int asid)
 
 FEXPORT(enable_irq)
 	// interrupt setup
-        la	t0, exception_handlers
-	ori	t0, t0, 1 // Vectored Interrupt
+        la	t0, exception_entry
         csrw	stvec, t0
         li	t0, 32
         csrs	sie, t0

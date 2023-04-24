@@ -2,107 +2,102 @@
 #include <mmu.h>
 #include <trap.h>
 
+#ifdef __ASSEMBLER__
 // clang-format off
 .macro SAVE_ALL
-.set noreorder
-.set noat
-	move    k0, sp
-.set reorder
-	bltz    sp, 1f
-	li      sp, KSTACKTOP
-.set noreorder
-1:
-	subu    sp, sp, TF_SIZE
-	sw      k0, TF_REG29(sp)
-	mfc0    k0, CP0_STATUS
-	sw      k0, TF_STATUS(sp)
-	mfc0    k0, CP0_CAUSE
-	sw      k0, TF_CAUSE(sp)
-	mfc0    k0, CP0_EPC
-	sw      k0, TF_EPC(sp)
-	mfc0    k0, CP0_BADVADDR
-	sw      k0, TF_BADVADDR(sp)
-	mfhi    k0
-	sw      k0, TF_HI(sp)
-	mflo    k0
-	sw      k0, TF_LO(sp)
-	sw      $0, TF_REG0(sp)
-	sw      $1, TF_REG1(sp)
-	sw      $2, TF_REG2(sp)
-	sw      $3, TF_REG3(sp)
-	sw      $4, TF_REG4(sp)
-	sw      $5, TF_REG5(sp)
-	sw      $6, TF_REG6(sp)
-	sw      $7, TF_REG7(sp)
-	sw      $8, TF_REG8(sp)
-	sw      $9, TF_REG9(sp)
-	sw      $10, TF_REG10(sp)
-	sw      $11, TF_REG11(sp)
-	sw      $12, TF_REG12(sp)
-	sw      $13, TF_REG13(sp)
-	sw      $14, TF_REG14(sp)
-	sw      $15, TF_REG15(sp)
-	sw      $16, TF_REG16(sp)
-	sw      $17, TF_REG17(sp)
-	sw      $18, TF_REG18(sp)
-	sw      $19, TF_REG19(sp)
-	sw      $20, TF_REG20(sp)
-	sw      $21, TF_REG21(sp)
-	sw      $22, TF_REG22(sp)
-	sw      $23, TF_REG23(sp)
-	sw      $24, TF_REG24(sp)
-	sw      $25, TF_REG25(sp)
-	sw      $26, TF_REG26(sp)
-	sw      $27, TF_REG27(sp)
-	sw      $28, TF_REG28(sp)
-	sw      $30, TF_REG30(sp)
-	sw      $31, TF_REG31(sp)
-.set at
-.set reorder
+	csrrw	sp, sscratch, sp
+        bnez    sp, f
+	csrrw	sp, sscratch, sp
+f:	addi	sp, sp, -TRAPFRAME_SIZE
+	sw      x0, 0(sp)
+        sw      x1, 4(sp)
+        sw      x2, 8(sp)
+        sw      x3, 12(sp)
+        sw      x4, 16(sp)
+        sw      x5, 20(sp)
+        sw      x6, 24(sp)
+        sw      x7, 28(sp)
+        sw      x8, 32(sp)
+        sw      x9, 36(sp)
+        sw      x10, 40(sp)
+        sw      x11, 44(sp)
+        sw      x12, 48(sp)
+        sw      x13, 52(sp)
+        sw      x14, 56(sp)
+        sw      x15, 60(sp)
+        sw      x16, 64(sp)
+        sw      x17, 68(sp)
+        sw      x18, 72(sp)
+        sw      x19, 76(sp)
+        sw      x20, 80(sp)
+        sw      x21, 84(sp)
+        sw      x22, 88(sp)
+        sw      x23, 92(sp)
+        sw      x24, 96(sp)
+        sw      x25, 100(sp)
+        sw      x26, 104(sp)
+        sw      x27, 108(sp)
+        sw      x28, 112(sp)
+        sw      x29, 116(sp)
+        sw      x30, 120(sp)
+        sw      x31, 124(sp)
+	csrr	t0, sstatus
+	sw	t0, 128(sp)
+	csrr	t0, sscratch
+	sw	t0, 132(sp)
+	csrr	t0, scause
+	sw	t0, 136(sp)
+	csrr	t0, sepc
+	sw	t0, 140(sp)
 .endm
 /*
  * Note that we restore the IE flags from stack. This means
  * that a modified IE mask will be nullified.
  */
-.macro RESTORE_SOME
-.set noreorder
-.set noat
-	lw      v0, TF_STATUS(sp)
-	mtc0    v0, CP0_STATUS
-	lw      v1, TF_LO(sp)
-	mtlo    v1
-	lw      v0, TF_HI(sp)
-	lw      v1, TF_EPC(sp)
-	mthi    v0
-	mtc0    v1, CP0_EPC
-	lw      $31, TF_REG31(sp)
-	lw      $30, TF_REG30(sp)
-	lw      $28, TF_REG28(sp)
-	lw      $25, TF_REG25(sp)
-	lw      $24, TF_REG24(sp)
-	lw      $23, TF_REG23(sp)
-	lw      $22, TF_REG22(sp)
-	lw      $21, TF_REG21(sp)
-	lw      $20, TF_REG20(sp)
-	lw      $19, TF_REG19(sp)
-	lw      $18, TF_REG18(sp)
-	lw      $17, TF_REG17(sp)
-	lw      $16, TF_REG16(sp)
-	lw      $15, TF_REG15(sp)
-	lw      $14, TF_REG14(sp)
-	lw      $13, TF_REG13(sp)
-	lw      $12, TF_REG12(sp)
-	lw      $11, TF_REG11(sp)
-	lw      $10, TF_REG10(sp)
-	lw      $9, TF_REG9(sp)
-	lw      $8, TF_REG8(sp)
-	lw      $7, TF_REG7(sp)
-	lw      $6, TF_REG6(sp)
-	lw      $5, TF_REG5(sp)
-	lw      $4, TF_REG4(sp)
-	lw      $3, TF_REG3(sp)
-	lw      $2, TF_REG2(sp)
-	lw      $1, TF_REG1(sp)
-.set at
-.set reorder
+.macro RESTORE_ALL
+	lw	t0, 128(sp)
+	csrw	sstatus, t0
+	lw	t0, 132(sp)
+	csrw	sscratch, t0
+	lw	t0, 136(sp)
+	csrw	scause, t0
+	lw	t0, 140(sp)
+	csrw	sepc, t0
+        lw      x1, 4(sp)
+        lw      x3, 12(sp)
+        lw      x4, 16(sp)
+        lw      x5, 20(sp)
+        lw      x6, 24(sp)
+        lw      x7, 28(sp)
+        lw      x8, 32(sp)
+        lw      x9, 36(sp)
+        lw      x10, 40(sp)
+        lw      x11, 44(sp)
+        lw      x12, 48(sp)
+        lw      x13, 52(sp)
+        lw      x14, 56(sp)
+        lw      x15, 60(sp)
+        lw      x16, 64(sp)
+        lw      x17, 68(sp)
+        lw      x18, 72(sp)
+        lw      x19, 76(sp)
+        lw      x20, 80(sp)
+        lw      x21, 84(sp)
+        lw      x22, 88(sp)
+        lw      x23, 92(sp)
+        lw      x24, 96(sp)
+        lw      x25, 100(sp)
+        lw      x26, 104(sp)
+        lw      x27, 108(sp)
+        lw      x28, 112(sp)
+        lw      x29, 116(sp)
+        lw      x30, 120(sp)
+        lw      x31, 124(sp)
+        lw      x2, 8(sp)
+	addi	sp, sp, TRAPFRAME_SIZE
+	csrrw	sp, sscratch, sp
+        bnez    sp, f
+	csrrw	sp, sscratch, sp
+f:
 .endm
+#endif

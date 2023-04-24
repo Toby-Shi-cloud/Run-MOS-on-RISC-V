@@ -9,21 +9,12 @@ FEXPORT(handle_\exception)
 	j	ret_from_exception
 .endm
 
-.text
-
+.section .text
 FEXPORT(ret_from_exception)
-	//todo do sth latter
+	RESTORE_ALL
+	sret
 
 FEXPORT(handle_timer)
-	mv	a0, sp
-	csrr	t0, scause
-	li	t2, 0x80000000
-	and	t1, t0, t2
-	bne	t1, zero, timer_irq // interrupt
-	// Load access fault
-	jal	do_reserved
-	j	ret_from_exception
-timer_irq:
 	// git current time
 	rdtime	a0
 	li	t1, TIMECLOCK
