@@ -5,7 +5,7 @@
 .macro BUILD_HANDLER exception handler
 FEXPORT(handle_\exception)
 	mv	a0, sp
-	jal	\handler
+	call	\handler
 	j	ret_from_exception
 .endm
 
@@ -13,6 +13,7 @@ FEXPORT(handle_\exception)
 FEXPORT(ret_from_exception)
 	RESTORE_ALL
 	sret
+	nop
 
 FEXPORT(handle_timer)
 	// git current time
@@ -29,3 +30,6 @@ BUILD_HANDLER sys do_syscall
 #endif
 
 BUILD_HANDLER reserved do_reserved
+BUILD_HANDLER instr_miss do_tlb_miss
+BUILD_HANDLER load_miss do_tlb_miss
+BUILD_HANDLER store_miss do_tlb_miss

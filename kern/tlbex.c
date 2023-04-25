@@ -1,6 +1,27 @@
 #include <env.h>
 #include <pmap.h>
 
+/* Overview:
+ *   When user tries to access to a page which is not map in pgdir, exception 12, 13, or 15
+ *   will occur. Therefore, this function has duty to handle these exception.
+ */
+void do_tlb_miss(struct Trapframe *tf) {
+	u_int addr; // where the user tries to access.
+	struct Page *p;
+	asm("csrr %0, stval" : "=r"(addr));
+	addr = ROUNDDOWN(addr, BY2PG); // align.
+	if (addr < UTEMP) panic("address too low.");
+	if (addr >= ULIM) panic("permission denied.");
+	if (tf->scause == 15) { // Store/AMO page fault
+		// alloc a page...
+		//todo maybe it's unsafe.
+		panic_on(page_alloc(&p));
+		page_insert(cur_pgdir, curenv->env_asid, p, addr, PTE_R | PTE_W | PTE_U);
+		return;
+	}
+	panic("bad addr");
+}
+
 #if !defined(LAB) || LAB >= 4
 /* Overview:
  *   This is the TLB Mod exception handler in kernel.

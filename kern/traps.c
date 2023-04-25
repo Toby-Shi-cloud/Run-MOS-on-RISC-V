@@ -32,9 +32,15 @@
 extern void handle_sys(void);
 extern void handle_mod(void);
 extern void handle_reserved(void);
+extern void handle_instr_miss(void);
+extern void handle_load_miss(void);
+extern void handle_store_miss(void);
 
 void (*exception_handlers[32])(void) = {
     [0 ... 31] = handle_reserved,
+    [12] = handle_instr_miss,
+    [13] = handle_load_miss,
+    [15] = handle_store_miss,
 #if !defined(LAB) || LAB >= 4
     [7] = handle_mod,
     [8] = handle_sys,
