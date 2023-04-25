@@ -174,9 +174,11 @@ void env_init(void) {
 
 	base_pgdir = (Pde *)page2kva(p);
 	map_segment(base_pgdir, 0, PADDR(pages), UPAGES, ROUND(npage * sizeof(struct Page), BY2PG),
-		    PTE_G);
+		    PTE_G | PTE_R | PTE_U);
 	map_segment(base_pgdir, 0, PADDR(envs), UENVS, ROUND(NENV * sizeof(struct Env), BY2PG),
-		    PTE_G);
+		    PTE_G | PTE_R | PTE_U);
+
+	printk("env.c: env_init success\n");
 }
 
 /* Overview:
@@ -201,12 +203,14 @@ static int env_setup_vm(struct Env *e) {
 	 *   As a result, the address space of all envs is identical in [UTOP, UVPT).
 	 *   See include/mmu.h for layout.
 	 */
+	extern Pde kernel_pgdir[];
+	memcpy((void *)e->env_pgdir, (void *)kernel_pgdir, BY2PG);
 	memcpy(e->env_pgdir + PDX(UTOP), base_pgdir + PDX(UTOP),
 	       sizeof(Pde) * (PDX(UVPT) - PDX(UTOP)));
 
 	/* Step 3: Map its own page table at 'UVPT' with readonly permission.
 	 * As a result, user programs can read its page table through 'UVPT' */
-	e->env_pgdir[PDX(UVPT)] = PADDR(e->env_pgdir) | PTE_V;
+	//todo
 	return 0;
 }
 
@@ -258,12 +262,12 @@ int env_alloc(struct Env **new, u_int parent_id) {
 	try(asid_alloc(&e->env_asid));
 	e->env_parent_id = parent_id;
 
-	/* Step 4: Initialize the sp and 'cp0_status' in 'e->env_tf'. */
-	// Timer interrupt (STATUS_IM4) will be enabled.
-	//todo aviod error temply.
-	// e->env_tf.cp0_status = STATUS_IM4 | STATUS_KUp | STATUS_IEp;
+	/* Step 4: Initialize the sp and 'sstatus' in 'e->env_tf'. */
+	// Timer interrupt will be enabled.
+	e->env_tf.sstatus = 2;
+	e->env_tf.sepc = UTEXT;
 	// Keep space for 'argc' and 'argv'.
-	e->env_tf.regs[29] = USTACKTOP - sizeof(int) - sizeof(char **);
+	e->env_tf.sscratch = USTACKTOP - sizeof(int) - sizeof(char **);
 
 	/* Step 5: Remove the new Env from env_free_list. */
 	/* Exercise 3.4: Your code here. (4/4) */
@@ -439,7 +443,7 @@ static inline void pre_env_run(struct Env *e) {
 #endif
 #ifdef MOS_SCHED_END_PC
 	struct Trapframe *tf = (struct Trapframe *)KSTACKTOP - 1;
-	u_int epc = tf->cp0_epc;
+	u_int epc = tf->sepc;
 	if (epc == MOS_SCHED_END_PC) {
 		printk("env %08x reached end pc: 0x%08x, $v0=0x%08x\n", e->env_id, epc,
 		       tf->regs[2]);
@@ -449,7 +453,7 @@ static inline void pre_env_run(struct Env *e) {
 #endif
 }
 
-extern void env_pop_tf(struct Trapframe *tf, u_int asid) __attribute__((noreturn));
+extern void env_pop_tf(struct Trapframe *tf, u_int satp) __attribute__((noreturn));
 
 /* Overview:
  *   Switch CPU context to the specified env 'e'.
@@ -490,7 +494,7 @@ void env_run(struct Env *e) {
 	 *    returning to the kernel caller, making 'env_run' a 'noreturn' function as well.
 	 */
 	/* Exercise 3.8: Your code here. (2/2) */
-	env_pop_tf(&curenv->env_tf, curenv->env_asid);
+	env_pop_tf(&curenv->env_tf, SV32MODE | curenv->env_asid << 22 | PPN((u_int)cur_pgdir));
 }
 
 void env_check() {

@@ -15,9 +15,6 @@
  *   3. You shouldn't use any 'return' statement because this function is 'noreturn'.
  */
 void schedule(int yield) {
-	printk("Schedule is called with yield = %d\n", yield);
-	asm volatile("sret"); //todo this is only to test timer interrupt.
-
 	static int count = 0; // remaining time slices of current env
 	struct Env *e = curenv;
 
