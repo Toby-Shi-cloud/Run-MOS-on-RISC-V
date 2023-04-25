@@ -97,11 +97,11 @@ static void riscv_kvm_map() {
 	
 	// mapping kernel text...
 	// perm = readable | excutable
-	riscv_create_mapping(kernel_pgdir, (u_int)_text, (u_int)_text, (u_int)_data - (u_int)_text, PTE_R | PTE_X);
+	riscv_create_mapping(kernel_pgdir, (u_int)_text, (u_int)_text, (u_int)_data - (u_int)_text, PTE_R | PTE_X | PTE_G);
 
 	// mapping kernel data and freespace...
 	// perm = readable | writable
-	riscv_create_mapping(kernel_pgdir, (u_int)_data, (u_int)_data, ULIM + memsize - (u_int)_data, PTE_R | PTE_W);
+	riscv_create_mapping(kernel_pgdir, (u_int)_data, (u_int)_data, ULIM + memsize - (u_int)_data, PTE_R | PTE_W | PTE_G);
 
 	// turn on virtual memory
 	u_int satp = SV32MODE | PPN((u_int)(kernel_pgdir));
@@ -125,7 +125,7 @@ void mips_vm_init() {
 	 * you should round up the memory size before map. */
 	pages = (struct Page *)alloc(npage * sizeof(struct Page), BY2PG, 1);
 	riscv_kvm_map();
-	printk("pmap.c:\t mips vm init success\n");
+	printk("pmap.c: mips vm init success\n");
 }
 
 /* Overview:
@@ -154,6 +154,8 @@ void page_init(void) {
 	/* Exercise 2.3: Your code here. (4/4) */
 	for (; i < npage; i++)
 		LIST_INSERT_HEAD(&page_free_list, &pages[i], pp_link);
+	
+	printk("pmap.c: page_init success\n");
 }
 
 /* Overview:
@@ -356,14 +358,10 @@ void page_remove(Pde *pgdir, u_int asid, u_long va) {
 
 /* Overview:
  *   Invalidate the TLB entry with specified 'asid' and virtual address 'va'.
- *
- * Hint:
- *   Construct a new Entry HI and call 'tlb_out' to flush TLB.
- *   'tlb_out' is defined in mm/tlb_asm.S
  */
 void tlb_invalidate(u_int asid, u_long va) {
 	//todo maybe just reflush?
-	asm volatile("sfence.vma zero, zero");
+	// asm volatile("sfence.vma zero, zero");
 }
 
 void physical_memory_manage_check(void) {

@@ -2,28 +2,59 @@
 #include <printk.h>
 #include <types.h>
 
+struct sbiret {
+	u_int error;
+	u_int value;
+};
+
 /* Overview:
  * 	use ecall to access Machine Level
  */
-static inline uint32_t sbi_call(uint32_t sbi_type, uint32_t arg0, uint32_t arg1, uint32_t arg2) {
-	uint32_t ret_val;
-	asm("mv a0, %0" : : "r"(arg0));
-	asm("mv a1, %0" : : "r"(arg1));
-	asm("mv a2, %0" : : "r"(arg2));
-	asm("mv a7, %0" : : "r"(sbi_type));
-	asm("ecall");
-	asm("mv %0, a0" : "=r"(ret_val) :);
-	return ret_val;
+static inline struct sbiret
+sbi_ecall(u_int ext, u_int fid, u_int arg0, u_int arg1,
+	  u_int arg2, u_int arg3, u_int arg4, u_int arg5) {
+	struct sbiret res;
+	asm volatile (
+		"mv a0, %[a0]\n"
+		"mv a1, %[a1]\n"
+		"mv a2, %[a2]\n"
+		"mv a3, %[a3]\n"
+		"mv a4, %[a4]\n"
+		"mv a5, %[a5]\n"
+		"mv a6, %[fid]\n"
+		"mv a7, %[eid]\n"
+		"ecall\n"
+		"mv %[error], a0\n"
+		"mv %[value], a1\n"
+		: [error] "=r" (res.error),
+		[value] "=r" (res.value)
+		: [a0] "r" (arg0),
+		[a1] "r" (arg1),
+		[a2] "r" (arg2),
+		[a3] "r" (arg3),
+		[a4] "r" (arg4),
+		[a5] "r" (arg5),
+		[fid] "r" (fid),
+		[eid] "r" (ext)
+		: "memory"
+	);
+	return res;
 }
 
+#define LegacyEcall(ext, a0, a1, a2) sbi_ecall((ext), 0, (a0), (a1), (a2), 0, 0, 0)
+
 void printcharc(char ch) {
-	panic_on(sbi_call(1, ch, 0, 0));
+	panic_on(LegacyEcall(1, ch, 0, 0).error);
 }
 
 int scancharc(void) {
-	return sbi_call(2, 0, 0, 0);
+	return LegacyEcall(2, 0, 0, 0).value;
 }
 
 void halt(void) {
-	sbi_call(8, 0, 0, 0);
+	LegacyEcall(8, 0, 0, 0);
+}
+
+void clock_set_next_event(u_int next_time) {
+	panic_on(LegacyEcall(0, next_time, 0, 0).error);
 }
