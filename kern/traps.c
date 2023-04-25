@@ -47,5 +47,5 @@ void (*exception_handlers[32])(void) = {
  */
 void do_reserved(struct Trapframe *tf) {
 	print_tf(tf);
-	panic("Unknown ExcCode %08x", tf->scause);
+	panic("Unknown ExcCode");
 }

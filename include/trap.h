@@ -11,8 +11,8 @@ struct Trapframe {
 
 	/* Saved special registers. */
 	unsigned long sstatus;
-	unsigned long scause;
 	unsigned long sscratch;
+	unsigned long scause;
 	unsigned long sepc;
 };
 
