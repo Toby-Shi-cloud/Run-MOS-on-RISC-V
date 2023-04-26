@@ -272,26 +272,24 @@ int page_insert(Pde *pgdir, u_int asid, struct Page *pp, u_long va, u_int perm) 
 		if (pa2page(PTE_ADDR(*pte)) != pp) {
 			page_remove(pgdir, asid, va);
 		} else {
-			tlb_invalidate(asid, va);
 			*pte = ADDR_PTE(page2pa(pp)) | perm | PTE_V;
+			tlb_flush(asid, va);
 			return 0;
 		}
 	}
 
-	/* Step 2: Flush TLB with 'tlb_invalidate'. */
-	/* Exercise 2.7: Your code here. (1/3) */
-	tlb_invalidate(asid, va);
-
-	/* Step 3: Re-get or create the page table entry. */
+	/* Step 2: Re-get or create the page table entry. */
 	/* If failed to create, return the error. */
-	/* Exercise 2.7: Your code here. (2/3) */
 	try(pgdir_walk(pgdir, va, 1, &pte));
 
-	/* Step 4: Insert the page to the page table entry with 'perm | PTE_V' and increase its
+	/* Step 3: Insert the page to the page table entry with 'perm | PTE_V' and increase its
 	 * 'pp_ref'. */
-	/* Exercise 2.7: Your code here. (3/3) */
 	*pte = ADDR_PTE(page2pa(pp)) | perm | PTE_V;
 	pp->pp_ref++;
+
+	/* Step 4: Flush TLB with 'tlb_flush'. */
+	/* Note: if pde is changed, flush all va */
+	tlb_flush(asid, 0);
 
 	return 0;
 }
@@ -352,16 +350,23 @@ void page_remove(Pde *pgdir, u_int asid, u_long va) {
 
 	/* Step 3: Flush TLB. */
 	*pte = 0;
-	tlb_invalidate(asid, va);
+	tlb_flush(asid, va);
 	return;
 }
 
 /* Overview:
- *   Invalidate the TLB entry with specified 'asid' and virtual address 'va'.
+ *   Flush the TLB entry with specified 'asid' and virtual address 'va'.
  */
-void tlb_invalidate(u_int asid, u_long va) {
-	//todo maybe just reflush?
-	// asm volatile("sfence.vma zero, zero");
+void tlb_flush(u_int asid, u_long va) {
+	if (va == 0 && asid == 0) {
+		asm("sfence.vma zero, zero");
+	} else if (va == 0) {
+		asm("sfence.vma zero, %[asid]" :: [asid]"r"(asid));
+	} else if (asid == 0) {
+		asm("sfence.vma %[va], zero" :: [va]"r"(va));
+	} else {
+		asm("sfence.vma %[va], %[asid]" :: [va]"r"(va), [asid]"r"(asid));
+	}
 }
 
 void physical_memory_manage_check(void) {

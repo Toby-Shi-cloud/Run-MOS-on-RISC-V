@@ -399,14 +399,14 @@ void env_free(struct Env *e) {
 		e->env_pgdir[pdeno] = 0;
 		page_decref(pa2page(pa));
 		/* Hint: invalidate page table in TLB */
-		tlb_invalidate(e->env_asid, UVPT + (pdeno << PGSHIFT));
+		tlb_flush(e->env_asid, 0);
 	}
 	/* Hint: free the page directory. */
 	page_decref(pa2page(PADDR(e->env_pgdir)));
 	/* Hint: free the ASID */
 	asid_free(e->env_asid);
 	/* Hint: invalidate page directory in TLB */
-	tlb_invalidate(e->env_asid, UVPT + (PDX(UVPT) << PGSHIFT));
+	tlb_flush(e->env_asid, 0);
 	/* Hint: return the environment to the free list. */
 	e->env_status = ENV_FREE;
 	LIST_INSERT_HEAD((&env_free_list), (e), env_link);
@@ -453,7 +453,7 @@ static inline void pre_env_run(struct Env *e) {
 #endif
 }
 
-extern void env_pop_tf(struct Trapframe *tf, u_int satp) __attribute__((noreturn));
+extern void env_pop_tf(struct Trapframe *tf, u_int asid, u_int satp) __attribute__((noreturn));
 
 /* Overview:
  *   Switch CPU context to the specified env 'e'.
@@ -494,7 +494,8 @@ void env_run(struct Env *e) {
 	 *    returning to the kernel caller, making 'env_run' a 'noreturn' function as well.
 	 */
 	/* Exercise 3.8: Your code here. (2/2) */
-	env_pop_tf(&curenv->env_tf, SV32MODE | curenv->env_asid << 22 | PPN((u_int)cur_pgdir));
+	env_pop_tf(&curenv->env_tf, curenv->env_asid,
+		   SV32MODE | curenv->env_asid << 22 | PPN((u_int)cur_pgdir));
 }
 
 void env_check() {
