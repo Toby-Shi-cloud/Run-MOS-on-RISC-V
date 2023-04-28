@@ -5,6 +5,7 @@
  *   When user tries to access to a page which is not map in pgdir, exception 12, 13, or 15
  *   will occur. Therefore, this function has duty to handle these exception.
  */
+#if !defined(LAB) || LAB >= 3
 void do_tlb_miss(struct Trapframe *tf) {
 	u_int addr; // where the user tries to access.
 	struct Page *p;
@@ -21,6 +22,7 @@ void do_tlb_miss(struct Trapframe *tf) {
 	}
 	panic("bad addr");
 }
+#endif
 
 #if !defined(LAB) || LAB >= 4
 /* Overview:
