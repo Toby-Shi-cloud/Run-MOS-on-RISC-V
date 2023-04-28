@@ -14,18 +14,28 @@ static inline struct sbiret
 sbi_ecall(u_int ext, u_int fid, u_int arg0, u_int arg1,
 	  u_int arg2, u_int arg3, u_int arg4, u_int arg5) {
 	struct sbiret res;
-	asm volatile (
-		"mv a0, %[a0]\n"
-		"mv a1, %[a1]\n"
-		"mv a2, %[a2]\n"
-		"mv a3, %[a3]\n"
-		"mv a4, %[a4]\n"
-		"mv a5, %[a5]\n"
-		"mv a6, %[fid]\n"
-		"mv a7, %[eid]\n"
+	asm (
+		"addi sp, sp, -8\n"
+		"mv t0, %[a0]\n"
+		"mv t1, %[a1]\n"
+		"mv t2, %[a2]\n"
+		"mv t3, %[a3]\n"
+		"mv t4, %[a4]\n"
+		"mv t5, %[a5]\n"
+		"sw %[fid], 0(sp)\n"
+		"sw %[eid], 4(sp)\n"
+		"mv a0, t0\n"
+		"mv a1, t1\n"
+		"mv a2, t2\n"
+		"mv a3, t3\n"
+		"mv a4, t4\n"
+		"mv a5, t5\n"
+		"lw a6, 0(sp)\n"
+		"lw a7, 4(sp)\n"
 		"ecall\n"
 		"mv %[error], a0\n"
 		"mv %[value], a1\n"
+		"addi sp, sp, 8\n"
 		: [error] "=r" (res.error),
 		[value] "=r" (res.value)
 		: [a0] "r" (arg0),
@@ -52,7 +62,7 @@ int scancharc(void) {
 }
 
 void halt(void) {
-	LegacyEcall(8, 0, 0, 0);
+	panic_on(LegacyEcall(8, 0, 0, 0).error);
 }
 
 void clock_set_next_event(u_int next_time) {

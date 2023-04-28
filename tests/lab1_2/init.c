@@ -90,14 +90,14 @@ static void printk_3_check(void) {
 	printk("%d and %u\n", c, b);
 }
 
-extern char bss_end[];
+extern char _bss_end[];
 
 void mips_init() {
 	if ((u_long)mips_init < KERNBASE || (u_long)mips_init >= KSTACKTOP) {
 		panic("bad address of kernel code: %x", mips_init);
 	}
-	if ((u_long)bss_end < KERNBASE || (u_long)bss_end > KSTACKTOP) {
-		panic("bad address of bss_end: %x", (u_long)bss_end);
+	if ((u_long)_bss_end < KERNBASE || (u_long)_bss_end > KSTACKTOP) {
+		panic("bad address of bss_end: %x", (u_long)_bss_end);
 	}
 
 	printk_1_check();

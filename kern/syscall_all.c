@@ -253,9 +253,9 @@ int sys_exofork(void) {
 	/* Exercise 4.9: Your code here. (2/4) */
 	e->env_tf = *((struct Trapframe *)KSTACKTOP - 1);
 
-	/* Step 3: Set the new env's 'env_tf.regs[2]' to 0 to indicate the return value in child. */
+	/* Step 3: Set the new env's 'env_tf.regs[10]' to 0 to indicate the return value in child. */
 	/* Exercise 4.9: Your code here. (3/4) */
-	e->env_tf.regs[2] = 0;
+	e->env_tf.regs[10] = 0;
 
 	/* Step 4: Set up the new env's 'env_status' and 'env_pri'.  */
 	/* Exercise 4.9: Your code here. (4/4) */
@@ -323,9 +323,9 @@ int sys_set_trapframe(u_int envid, struct Trapframe *tf) {
 	try(envid2env(envid, &env, 1));
 	if (env == curenv) {
 		*((struct Trapframe *)KSTACKTOP - 1) = *tf;
-		// return `tf->regs[2]` instead of 0, because return value overrides regs[2] on
+		// return `tf->regs[10]` instead of 0, because return value overrides regs[10] on
 		// current trapframe.
-		return tf->regs[2];
+		return tf->regs[10];
 	} else {
 		env->env_tf = *tf;
 		return 0;
@@ -371,7 +371,7 @@ int sys_ipc_recv(u_int dstva) {
 	TAILQ_REMOVE(&env_sched_list, curenv, env_sched_link);
 
 	/* Step 5: Give up the CPU and block until a message is received. */
-	((struct Trapframe *)KSTACKTOP - 1)->regs[2] = 0;
+	((struct Trapframe *)KSTACKTOP - 1)->regs[10] = 0;
 	schedule(1);
 }
 

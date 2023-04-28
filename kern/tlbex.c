@@ -25,7 +25,7 @@ static void passive_alloc(u_int va, Pde *pgdir, u_int asid) {
 	}
 
 	panic_on(page_alloc(&p));
-	panic_on(page_insert(pgdir, asid, p, PTE_ADDR(va), PTE_R | PTE_W | PTE_U));
+	panic_on(page_insert(pgdir, asid, p, va, PTE_R | PTE_W | PTE_U));
 }
 
 /* Overview:
@@ -43,6 +43,11 @@ void do_tlb_miss(struct Trapframe *tf) {
 		passive_alloc(addr, cur_pgdir, curenv->env_asid);
 		return;
 	} else if (tf->scause == 13) { // Load page fault
+		if (addr == USTACKTOP - BY2PG) {
+			// init stack
+			passive_alloc(addr, cur_pgdir, curenv->env_asid);
+			return;
+		}
 		if (addr < UVPT || addr >= ULIM) {
 			panic("bad addr");
 		}

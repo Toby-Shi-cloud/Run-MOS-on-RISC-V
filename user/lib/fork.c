@@ -24,9 +24,9 @@ static void __attribute__((noreturn)) cow_entry(struct Trapframe *tf) {
 	perm = vpt[VPN(va)] & 0xFFF;
 	user_assert(perm & PTE_COW);
 
-	/* Step 2: Remove 'PTE_COW' from the 'perm', and add 'PTE_D' to it. */
+	/* Step 2: Remove 'PTE_COW' from the 'perm', and add 'PTE_W' to it. */
 	/* Exercise 4.13: Your code here. (2/6) */
-	perm = (perm ^ PTE_COW) | PTE_D;
+	perm = (perm ^ PTE_COW) | PTE_W;
 
 	/* Step 3: Allocate a new page at 'UCOW'. */
 	/* Exercise 4.13: Your code here. (3/6) */
@@ -57,8 +57,8 @@ static void __attribute__((noreturn)) cow_entry(struct Trapframe *tf) {
  *   children.
  *
  * Post-Condition:
- *   If the virtual page 'vpn' has 'PTE_D' and doesn't has 'PTE_LIBRARY', both our original virtual
- *   page and 'envid''s newly-mapped virtual page should be marked 'PTE_COW' and without 'PTE_D',
+ *   If the virtual page 'vpn' has 'PTE_W' and doesn't has 'PTE_LIBRARY', both our original virtual
+ *   page and 'envid''s newly-mapped virtual page should be marked 'PTE_COW' and without 'PTE_W',
  *   while the other permission bits are kept.
  *
  *   If not, the newly-mapped virtual page in 'envid' should have the exact same permission as our
@@ -66,7 +66,7 @@ static void __attribute__((noreturn)) cow_entry(struct Trapframe *tf) {
  *
  * Hint:
  *   - 'PTE_LIBRARY' indicates that the page should be shared among a parent and its children.
- *   - A page with 'PTE_LIBRARY' may have 'PTE_D' at the same time, you should handle it correctly.
+ *   - A page with 'PTE_LIBRARY' may have 'PTE_W' at the same time, you should handle it correctly.
  *   - You can pass '0' as an 'envid' in arguments of 'syscall_*' to indicate current env because
  *     kernel 'envid2env' converts '0' to 'curenv').
  *   - You should use 'syscall_mem_map', the user space wrapper around 'msyscall' to invoke
@@ -87,8 +87,8 @@ static void duppage(u_int envid, u_int vpn) {
 	/* Hint: The page should be first mapped to the child before remapped in the parent. (Why?)
 	 */
 	/* Exercise 4.10: Your code here. (2/2) */
-	if ((perm & PTE_D) && !(perm & PTE_COW) && !(perm & PTE_LIBRARY)) {
-		perm = (perm ^ PTE_D) | PTE_COW;
+	if ((perm & PTE_W) && !(perm & PTE_COW) && !(perm & PTE_LIBRARY)) {
+		perm = (perm ^ PTE_W) | PTE_COW;
 		panic_on(syscall_mem_map(0, (void *)addr, envid, (void *)addr, perm));
 		panic_on(syscall_mem_map(0, (void *)addr, 0, (void *)addr, perm));
 	} else {
@@ -129,7 +129,8 @@ int fork(void) {
 	/* Step 3: Map all mapped pages below 'USTACKTOP' into the child's address space. */
 	// Hint: You should use 'duppage'.
 	/* Exercise 4.15: Your code here. (1/2) */
-	for (i = 0; i < (USTACKTOP >> PGSHIFT); i++) {
+	/* Porting note: Do NOT map pages at UVPT. */
+	for (i = 0; i < (UVPT >> PGSHIFT); i++) {
 		if ((vpd[PDX(i * BY2PG)] & PTE_V) && (vpt[i] & PTE_V)) {
 			duppage(child, i);
 		}

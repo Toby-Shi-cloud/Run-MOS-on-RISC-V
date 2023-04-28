@@ -278,10 +278,6 @@ int env_alloc(struct Env **new, u_int parent_id) {
 	e->env_tf.sstatus = 2;
 	// Keep space for 'argc' and 'argv'.
 	e->env_tf.sscratch = USTACKTOP - sizeof(int) - sizeof(char **);
-	// init stack page
-	struct Page *p;
-	try(page_alloc(&p));
-	try(page_insert(e->env_pgdir, e->env_asid, p, USTACKTOP - BY2PG, PTE_U | PTE_W | PTE_R));
 
 	/* Step 5: Remove the new Env from env_free_list. */
 	/* Exercise 3.4: Your code here. (4/4) */
@@ -563,6 +559,7 @@ void env_check() {
 	printk("pe1->env_pgdir %x\n", pe1->env_pgdir);
 
 	assert(pe2->env_pgdir[PDX(UTOP)] == base_pgdir[PDX(UTOP)]);
+	printk("%08x %08x %08x\n", pe2->env_pgdir[PDX(UTOP) - 1], PDX(UTOP) - 1, PDX(UVPT));
 	assert(pe2->env_pgdir[PDX(UTOP) - 1] == 0);
 	printk("env_setup_vm passed!\n");
 
