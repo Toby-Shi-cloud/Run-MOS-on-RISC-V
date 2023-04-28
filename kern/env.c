@@ -54,6 +54,7 @@ static void asid_free(u_int i) {
 	int index = i >> 5;
 	int inner = i & 31;
 	asid_bitmap[index] &= ~(1 << inner);
+	tlb_flush(i, 0);
 }
 
 /* Overview:
