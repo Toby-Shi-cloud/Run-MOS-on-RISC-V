@@ -1,4 +1,3 @@
-#include <drivers/dev_cons.h>
 #include <env.h>
 #include <mmu.h>
 #include <pmap.h>
@@ -523,40 +522,33 @@ void *syscall_table[MAX_SYSNO] = {
  * stack.
  *
  * Hint:
- *   Use sysno from $a0 to dispatch the syscall.
- *   The possible arguments are stored at $a1, $a2, $a3, [$sp + 16 bytes], [$sp + 20 bytes] in
+ *   Use sysno from a0 to dispatch the syscall.
+ *   The possible arguments are stored at a1, a2, a3, a4, a5 in
  *   order.
  *   Number of arguments cannot exceed 5.
  */
 void do_syscall(struct Trapframe *tf) {
 	int (*func)(u_int, u_int, u_int, u_int, u_int);
-	int sysno = tf->regs[4];
+	int sysno = tf->regs[10];
 	if (sysno < 0 || sysno >= MAX_SYSNO) {
-		tf->regs[2] = -E_NO_SYS;
+		tf->regs[10] = -E_NO_SYS;
 		return;
 	}
 
 	/* Step 1: Add the EPC in 'tf' by a word (size of an instruction). */
-	/* Exercise 4.2: Your code here. (1/4) */
-	tf->cp0_epc += 4;
+	tf->sepc += 4;
 
 	/* Step 2: Use 'sysno' to get 'func' from 'syscall_table'. */
-	/* Exercise 4.2: Your code here. (2/4) */
 	func = syscall_table[sysno];
 
-	/* Step 3: First 3 args are stored in $a1, $a2, $a3. */
-	u_int arg1 = tf->regs[5];
-	u_int arg2 = tf->regs[6];
-	u_int arg3 = tf->regs[7];
+	/* Step 3: arguments are stored in a1, a2, a3, a4, a5. */
+	u_int arg1 = tf->regs[11];
+	u_int arg2 = tf->regs[12];
+	u_int arg3 = tf->regs[13];
+	u_int arg4 = tf->regs[14];
+	u_int arg5 = tf->regs[15];
 
-	/* Step 4: Last 2 args are stored in stack at [$sp + 16 bytes], [$sp + 20 bytes]. */
-	u_int arg4, arg5;
-	/* Exercise 4.2: Your code here. (3/4) */
-	arg4 = *(u_int *)(tf->regs[29] + 16);
-	arg5 = *(u_int *)(tf->regs[29] + 20);
-
-	/* Step 5: Invoke 'func' with retrieved arguments and store its return value to $v0 in 'tf'.
+	/* Step 4: Invoke 'func' with retrieved arguments and store its return value to a0 in 'tf'.
 	 */
-	/* Exercise 4.2: Your code here. (4/4) */
-	tf->regs[2] = func(arg1, arg2, arg3, arg4, arg5);
+	tf->regs[10] = func(arg1, arg2, arg3, arg4, arg5);
 }

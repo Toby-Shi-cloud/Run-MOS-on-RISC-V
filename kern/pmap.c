@@ -289,6 +289,7 @@ int page_insert(Pde *pgdir, u_int asid, struct Page *pp, u_long va, u_int perm) 
 
 	/* Step 4: Flush TLB with 'tlb_flush'. */
 	/* Note: if pde is changed, flush all va */
+	pgdir[PDX(UVPT)] = 0;
 	tlb_flush(asid, 0);
 
 	return 0;

@@ -14,6 +14,7 @@ struct Trapframe {
 	unsigned long sscratch;
 	unsigned long scause;
 	unsigned long sepc;
+	unsigned long stval;
 };
 
 void print_tf(struct Trapframe *tf);
@@ -32,6 +33,6 @@ void print_tf(struct Trapframe *tf);
 
 #endif /* __ASSEMBLER__ */
 
-#define TRAPFRAME_SIZE 144
+#define TRAPFRAME_SIZE 148
 
 #endif /* _TRAP_H_ */

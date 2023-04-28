@@ -14,7 +14,7 @@
  *    the faulting page at the same address.
  */
 static void __attribute__((noreturn)) cow_entry(struct Trapframe *tf) {
-	u_int va = tf->cp0_badvaddr;
+	u_int va = tf->stval;
 	u_int perm;
 
 	/* Step 1: Find the 'perm' in which the faulting address 'va' is mapped. */

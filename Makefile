@@ -68,7 +68,7 @@ fs: user
 user: lib
 
 clean:
-	for d in $(modules) tools/readelf user/* tests/*; do
+	for d in $(modules) tools tools/readelf user/* tests/*; do
 		if [ -f $$d/Makefile ]; then
 			$(MAKE) --directory=$$d clean
 		fi

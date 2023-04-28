@@ -54,7 +54,6 @@ static void asid_free(u_int i) {
 	int index = i >> 5;
 	int inner = i & 31;
 	asid_bitmap[index] &= ~(1 << inner);
-	tlb_flush(i, 0);
 }
 
 /* Overview:
@@ -220,7 +219,9 @@ static int env_setup_vm(struct Env *e) {
 
 	/* Step 3: Map its own page table at 'UVPT' with readonly permission.
 	 * As a result, user programs can read its page table through 'UVPT' */
-	//todo
+	/* Porting note:
+	 * Copy the page table to another page when user tries to access, and map that page at 'UVPT'.
+	 * Therefore, mos will do nothing when creating the env. */
 	return 0;
 }
 
@@ -275,9 +276,12 @@ int env_alloc(struct Env **new, u_int parent_id) {
 	/* Step 4: Initialize the sp and 'sstatus' in 'e->env_tf'. */
 	// Timer interrupt will be enabled.
 	e->env_tf.sstatus = 2;
-	e->env_tf.sepc = UTEXT;
 	// Keep space for 'argc' and 'argv'.
 	e->env_tf.sscratch = USTACKTOP - sizeof(int) - sizeof(char **);
+	// init stack page
+	struct Page *p;
+	try(page_alloc(&p));
+	try(page_insert(e->env_pgdir, e->env_asid, p, USTACKTOP - BY2PG, PTE_U | PTE_W | PTE_R));
 
 	/* Step 5: Remove the new Env from env_free_list. */
 	/* Exercise 3.4: Your code here. (4/4) */
@@ -346,7 +350,7 @@ static void load_icode(struct Env *e, const void *binary, size_t size) {
 		}
 	}
 
-	/* Step 3: Set 'e->env_tf.cp0_epc' to 'ehdr->e_entry'. */
+	/* Step 3: Set 'e->env_tf.sepc' to 'ehdr->e_entry'. */
 	/* Exercise 3.6: Your code here. */
 	e->env_tf.sepc = ehdr->e_entry;
 }
@@ -411,6 +415,10 @@ void env_free(struct Env *e) {
 		/* Hint: invalidate page table in TLB */
 		tlb_flush(e->env_asid, 0);
 	}
+	if (e->env_pgdir_copy_pa) {
+		// if used, free it.
+		page_decref(pa2page(e->env_pgdir_copy_pa));
+	}
 	/* Hint: free the page directory. */
 	page_decref(pa2page(PADDR(e->env_pgdir)));
 	/* Hint: free the ASID */
@@ -463,7 +471,7 @@ static inline void pre_env_run(struct Env *e) {
 #endif
 }
 
-extern void env_pop_tf(struct Trapframe *tf, u_int asid, u_int satp) __attribute__((noreturn));
+extern void env_pop_tf(struct Trapframe *tf, u_int satp) __attribute__((noreturn));
 
 /* Overview:
  *   Switch CPU context to the specified env 'e'.
@@ -504,8 +512,7 @@ void env_run(struct Env *e) {
 	 *    returning to the kernel caller, making 'env_run' a 'noreturn' function as well.
 	 */
 	/* Exercise 3.8: Your code here. (2/2) */
-	env_pop_tf(&curenv->env_tf, curenv->env_asid,
-		   SV32MODE | curenv->env_asid << 22 | PPN((u_int)cur_pgdir));
+	env_pop_tf(&curenv->env_tf, SV32MODE | curenv->env_asid << 22 | PPN((u_int)cur_pgdir));
 }
 
 void env_check() {

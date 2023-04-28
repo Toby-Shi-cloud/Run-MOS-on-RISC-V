@@ -16,18 +16,18 @@ PHDRS {
 SECTIONS {
 	. = 0x00400000;
 
-	.text : {
+	.text ALIGN(0x1000) : {
 		*(.text)
 		*(.rodata)
 		*(.rodata.*)
 	} : code
 
-	.data ALIGN(4096) : {
-		*(.data)
+	.data ALIGN(0x1000) : {
+		*(.data .data* .sdata .sdata*)
 	} : data
 
-	.bss : {
-		*(.bss)
+	.bss ALIGN(0x1000) : {
+		*(.bss .bss* .sbss .sbss*)
 	} : data
 
 	end = . ;
