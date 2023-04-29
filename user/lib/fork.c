@@ -21,7 +21,7 @@ static void __attribute__((noreturn)) cow_entry(struct Trapframe *tf) {
 	/* Hint: Use 'vpt' and 'VPN' to find the page table entry. If the 'perm' doesn't have
 	 * 'PTE_COW', launch a 'user_panic'. */
 	/* Exercise 4.13: Your code here. (1/6) */
-	perm = vpt[VPN(va)] & 0xFFF;
+	perm = vpt[VPN(va)] & 0x3FF;
 	user_assert(perm & PTE_COW);
 
 	/* Step 2: Remove 'PTE_COW' from the 'perm', and add 'PTE_W' to it. */
@@ -35,7 +35,7 @@ static void __attribute__((noreturn)) cow_entry(struct Trapframe *tf) {
 	/* Step 4: Copy the content of the faulting page at 'va' to 'UCOW'. */
 	/* Hint: 'va' may not be aligned to a page! */
 	/* Exercise 4.13: Your code here. (4/6) */
-	memcpy((void *)UCOW, (void *)PTE_ADDR(va), BY2PG);
+	memcpy((void *)UCOW, (void *)ROUNDDOWN(va, BY2PG), BY2PG);
 
 	// Step 5: Map the page at 'UCOW' to 'va' with the new 'perm'.
 	/* Exercise 4.13: Your code here. (5/6) */
@@ -80,7 +80,7 @@ static void duppage(u_int envid, u_int vpn) {
 	/* Hint: Use 'vpt' to find the page table entry. */
 	/* Exercise 4.10: Your code here. (1/2) */
 	addr = vpn * BY2PG;
-	perm = vpt[vpn] & 0xFFF;
+	perm = vpt[vpn] & 0x3FF;
 
 	/* Step 2: If the page is writable, and not shared with children, and not marked as COW yet,
 	 * then map it as copy-on-write, both in the parent (0) and the child (envid). */
@@ -129,8 +129,7 @@ int fork(void) {
 	/* Step 3: Map all mapped pages below 'USTACKTOP' into the child's address space. */
 	// Hint: You should use 'duppage'.
 	/* Exercise 4.15: Your code here. (1/2) */
-	/* Porting note: Do NOT map pages at UVPT. */
-	for (i = 0; i < (UVPT >> PGSHIFT); i++) {
+	for (i = 0; i < (USTACKTOP >> PGSHIFT); i++) {
 		if ((vpd[PDX(i * BY2PG)] & PTE_V) && (vpt[i] & PTE_V)) {
 			duppage(child, i);
 		}

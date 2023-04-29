@@ -25,8 +25,10 @@ static void passive_alloc(u_int va, Pde *pgdir, u_int asid) {
 	}
 
 	panic_on(page_alloc(&p));
-	panic_on(page_insert(pgdir, asid, p, va, PTE_R | PTE_W | PTE_U));
+	panic_on(page_insert(pgdir, asid, p, ROUNDDOWN(va, BY2PG), PTE_R | PTE_W | PTE_U));
 }
+
+void do_tlb_mod(struct Trapframe *tf);
 
 /* Overview:
  *   When user tries to access to a page which is not map in pgdir, exception 12, 13, or 15
@@ -37,6 +39,12 @@ void do_tlb_miss(struct Trapframe *tf) {
 	struct Page *p;
 	addr = tf->stval;
 	addr = ROUNDDOWN(addr, BY2PG); // align.
+	p = page_lookup(cur_pgdir, addr, NULL);
+	if (p != NULL) { // the page exists.
+		if (tf->scause == 15) do_tlb_mod(tf);
+		else panic("Why????");
+		return;
+	}
 	if (tf->scause == 15) { // Store/AMO page fault
 		// alloc a page...
 		//todo maybe it's unsafe.
@@ -73,7 +81,6 @@ void do_tlb_miss(struct Trapframe *tf) {
 	panic("bad addr");
 }
 
-#if !defined(LAB) || LAB >= 4
 /* Overview:
  *   This is the TLB Mod exception handler in kernel.
  *   Our kernel allows user programs to handle TLB Mod exception in user mode, so we copy its
@@ -88,20 +95,25 @@ void do_tlb_miss(struct Trapframe *tf) {
 void do_tlb_mod(struct Trapframe *tf) {
 	struct Trapframe tmp_tf = *tf;
 
-	if (tf->regs[29] < USTACKTOP || tf->regs[29] >= UXSTACKTOP) {
-		tf->regs[29] = UXSTACKTOP;
+	// Porting note: sscratch is actually the sp.
+	if (tf->sscratch < USTACKTOP || tf->sscratch >= UXSTACKTOP) {
+		tf->sscratch = UXSTACKTOP;
 	}
-	tf->regs[29] -= sizeof(struct Trapframe);
-	*(struct Trapframe *)tf->regs[29] = tmp_tf;
+	tf->sscratch -= sizeof(struct Trapframe);
+	
+	// if the memory in UXSTACKTOP has not been alloc...
+	if (page_lookup(cur_pgdir, tf->sscratch, NULL) == NULL)
+		passive_alloc(tf->sscratch, cur_pgdir, curenv->env_asid);
+
+	*(struct Trapframe *)tf->sscratch = tmp_tf;
 
 	if (curenv->env_user_tlb_mod_entry) {
-		tf->regs[4] = tf->regs[29];
-		tf->regs[29] -= sizeof(tf->regs[4]);
-		// Hint: Set 'cp0_epc' in the context 'tf' to 'curenv->env_user_tlb_mod_entry'.
+		tf->regs[10] = tf->sscratch;
+		tf->sscratch -= sizeof(tf->regs[10]);
+		// Hint: Set 'sepc' in the context 'tf' to 'curenv->env_user_tlb_mod_entry'.
 		/* Exercise 4.11: Your code here. */
-
+		tf->sepc = curenv->env_user_tlb_mod_entry;
 	} else {
 		panic("TLB Mod but no user handler registered");
 	}
 }
-#endif

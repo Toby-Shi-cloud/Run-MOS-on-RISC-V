@@ -178,6 +178,5 @@ typedef u_long Pte;
 		(u_int) __m_p > ULIM ? (typeof(_p))ULIM : __m_p;                                   \
 	})
 
-extern void tlb_out(u_int entryhi);
 #endif //!__ASSEMBLER__
 #endif // !_MMU_H_
