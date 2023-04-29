@@ -154,7 +154,7 @@ int sys_mem_alloc(u_int envid, u_int va, u_int perm) {
 	try(page_alloc(&pp));
 
 	/* Step 4: Map the allocated page at 'va' with permission 'perm' using 'page_insert'. */
-	return page_insert(env->env_pgdir, env->env_asid, pp, va, perm);
+	return page_insert(env->env_pgdir, env->env_asid, pp, va, perm | PTE_U);
 }
 
 /* Overview:
@@ -199,7 +199,7 @@ int sys_mem_map(u_int srcid, u_int srcva, u_int dstid, u_int dstva, u_int perm) 
 	}
 
 	/* Step 5: Map the physical page at 'dstva' in the address space of 'dstid'. */
-	return page_insert(dstenv->env_pgdir, dstenv->env_asid, pp, dstva, perm);
+	return page_insert(dstenv->env_pgdir, dstenv->env_asid, pp, dstva, perm | PTE_U);
 }
 
 /* Overview:

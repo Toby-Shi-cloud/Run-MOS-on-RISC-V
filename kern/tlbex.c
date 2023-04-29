@@ -42,8 +42,11 @@ void do_tlb_miss(struct Trapframe *tf) {
 	addr = ROUNDDOWN(addr, BY2PG); // align.
 	p = page_lookup(cur_pgdir, addr, &pte);
 	if (p != NULL) { // the page exists.
-		if (tf->scause == 15) do_tlb_mod(tf);
-		else panic("bad perm: %010b", *pte & 0x3ff);
+		if (tf->scause == 15 && (*pte & PTE_COW)) {
+			do_tlb_mod(tf);
+		} else {
+			panic("bad perm: %010b", *pte & 0x3ff);
+		}
 		return;
 	}
 	if (tf->scause == 15) { // Store/AMO page fault
