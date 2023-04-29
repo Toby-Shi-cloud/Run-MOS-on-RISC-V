@@ -37,12 +37,13 @@ void do_tlb_mod(struct Trapframe *tf);
 void do_tlb_miss(struct Trapframe *tf) {
 	u_int addr; // where the user tries to access.
 	struct Page *p;
+	Pte *pte;
 	addr = tf->stval;
 	addr = ROUNDDOWN(addr, BY2PG); // align.
-	p = page_lookup(cur_pgdir, addr, NULL);
+	p = page_lookup(cur_pgdir, addr, &pte);
 	if (p != NULL) { // the page exists.
 		if (tf->scause == 15) do_tlb_mod(tf);
-		else panic("Why????");
+		else panic("bad perm: %010b", *pte & 0x3ff);
 		return;
 	}
 	if (tf->scause == 15) { // Store/AMO page fault
@@ -67,7 +68,7 @@ void do_tlb_miss(struct Trapframe *tf) {
 			p = pa2page(curenv->env_pgdir_copy_pa);
 		}
 		u_int kva = page2kva(p);
-		Pte * pte = (Pte *)kva;
+		pte = (Pte *)kva;
 		memcpy((void *)kva, (void *)cur_pgdir, BY2PG);
 		for (int i = 0; i < 1024; i++) {
 			if (pte[i] & PTE_V) {

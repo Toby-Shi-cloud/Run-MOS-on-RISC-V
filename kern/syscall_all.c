@@ -385,7 +385,7 @@ int sys_ipc_recv(u_int dstva) {
  *   - 'env_ipc_value' is set to the 'value'.
  *   - 'env_status' is set to 'ENV_RUNNABLE' again to recover from 'ipc_recv'.
  *   - if 'srcva' is not NULL, map 'env_ipc_dstva' to the same page mapped at 'srcva' in 'curenv'
- *     with 'perm'.
+ *     with 'perm | PTE_V | PTE_U'.
  *
  *   Return -E_IPC_NOT_RECV if the target has not been waiting for an IPC message with
  *   'sys_ipc_recv'.
@@ -416,7 +416,7 @@ int sys_ipc_try_send(u_int envid, u_int value, u_int srcva, u_int perm) {
 	/* Step 4: Set the target's ipc fields. */
 	e->env_ipc_value = value;
 	e->env_ipc_from = curenv->env_id;
-	e->env_ipc_perm = PTE_V | perm;
+	e->env_ipc_perm = PTE_U | PTE_V | perm;
 	e->env_ipc_recving = 0;
 
 	/* Step 5: Set the target's status to 'ENV_RUNNABLE' again and insert it to the tail of
@@ -434,7 +434,7 @@ int sys_ipc_try_send(u_int envid, u_int value, u_int srcva, u_int perm) {
 		if (p == NULL) {
 			return -E_INVAL;
 		}
-		return page_insert(e->env_pgdir, e->env_asid, p, e->env_ipc_dstva, perm);
+		return page_insert(e->env_pgdir, e->env_asid, p, e->env_ipc_dstva, e->env_ipc_perm);
 	}
 	return 0;
 }
