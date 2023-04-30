@@ -222,6 +222,7 @@ static int env_setup_vm(struct Env *e) {
 	/* Porting note:
 	 * Copy the page table to another page when user tries to access, and map that page at 'UVPT'.
 	 * Therefore, mos will do nothing when creating the env. */
+	e->env_pgdir_copy_pa = 0;
 	return 0;
 }
 
@@ -413,6 +414,8 @@ void env_free(struct Env *e) {
 	}
 	if (e->env_pgdir_copy_pa) {
 		// if used, free it.
+		// note that shared the page table with other process it not permitted.
+		assert(pa2page(e->env_pgdir_copy_pa)->pp_ref == 1);
 		page_decref(pa2page(e->env_pgdir_copy_pa));
 	}
 	/* Hint: free the page directory. */
