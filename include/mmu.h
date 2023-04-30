@@ -46,7 +46,7 @@
 #define PTE_G 0x020
 
 // Access bit. To mark whether this page has been accessed since the last time A-bit cleared.
-#define PTE_N 0x040
+#define PTE_A 0x040
 
 // Dirty bit. To mark whether this page has been changed since the last time A-bit cleared.
 #define PTE_D 0x080
@@ -172,14 +172,11 @@ typedef u_long Pte;
 	} while (0)
 
 //todo: what's this?
-/*
 #define TRUP(_p)                                                                                   \
 	({                                                                                         \
 		typeof((_p)) __m_p = (_p);                                                         \
 		(u_int) __m_p > ULIM ? (typeof(_p))ULIM : __m_p;                                   \
 	})
-*/
 
-extern void tlb_out(u_int entryhi);
 #endif //!__ASSEMBLER__
 #endif // !_MMU_H_

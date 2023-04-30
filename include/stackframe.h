@@ -48,6 +48,8 @@
 	sw	t0, 136(sp)
 	csrr	t0, sepc
 	sw	t0, 140(sp)
+	csrr	t0, stval
+	sw	t0, 144(sp)
 .endm
 /*
  * Note that we restore the IE flags from stack. This means
@@ -62,6 +64,8 @@
 	csrw	scause, t0
 	lw	t0, 140(sp)
 	csrw	sepc, t0
+	lw	t0, 144(sp)
+	csrw	stval, t0
 	lw	x1, 4(sp)
 	lw	x3, 12(sp)
 	lw	x4, 16(sp)

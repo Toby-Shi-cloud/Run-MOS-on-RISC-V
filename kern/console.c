@@ -14,7 +14,7 @@ static inline struct sbiret
 sbi_ecall(u_int ext, u_int fid, u_int arg0, u_int arg1,
 	  u_int arg2, u_int arg3, u_int arg4, u_int arg5) {
 	struct sbiret res;
-	asm volatile (
+	asm (
 		"mv a0, %[a0]\n"
 		"mv a1, %[a1]\n"
 		"mv a2, %[a2]\n"
@@ -36,7 +36,8 @@ sbi_ecall(u_int ext, u_int fid, u_int arg0, u_int arg1,
 		[a5] "r" (arg5),
 		[fid] "r" (fid),
 		[eid] "r" (ext)
-		: "memory"
+		: "a0", "a1", "a2", "a3",
+		"a4", "a5", "a6", "a7"
 	);
 	return res;
 }
@@ -52,7 +53,7 @@ int scancharc(void) {
 }
 
 void halt(void) {
-	LegacyEcall(8, 0, 0, 0);
+	panic_on(LegacyEcall(8, 0, 0, 0).error);
 }
 
 void clock_set_next_event(u_int next_time) {

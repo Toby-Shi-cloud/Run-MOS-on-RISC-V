@@ -11,6 +11,8 @@ FEXPORT(handle_\exception)
 
 .section .text
 FEXPORT(ret_from_exception)
+	li	t0, 0x40000
+	csrc	sstatus, t0
 	RESTORE_ALL
 	sret
 	nop

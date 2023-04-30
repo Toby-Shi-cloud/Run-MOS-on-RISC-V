@@ -4,6 +4,8 @@
 .section .text.entry
 EXPORT(exception_entry)
 	SAVE_ALL
+	li	t0, 0x40000
+	csrs	sstatus, t0
 	csrr	t0, scause
 	li	t1, 0x80000000
 	and	t2, t1, t0

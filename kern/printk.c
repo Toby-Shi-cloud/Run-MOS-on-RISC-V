@@ -23,4 +23,5 @@ void print_tf(struct Trapframe *tf) {
 	printk("sscratch = %08x\n", tf->sscratch);
 	printk("scause   = %08x\n", tf->scause);
 	printk("sepc     = %08x\n", tf->sepc);
+	printk("stval    = %08x\n", tf->stval);
 }

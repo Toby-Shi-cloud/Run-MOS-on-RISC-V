@@ -3,8 +3,8 @@
 #include <trap.h>
 
 .text
-FEXPORT(env_pop_tf) // void env_pop_tf(struct Trapframe *tf, u_int asid, u_int satp)
-	csrw	satp, a2
+FEXPORT(env_pop_tf) // void env_pop_tf(struct Trapframe *tf, u_int satp)
+	csrw	satp, a1
 	fence.i
 	mv      sp, a0
 	j       ret_from_exception
