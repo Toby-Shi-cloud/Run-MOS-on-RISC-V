@@ -105,10 +105,6 @@ void do_tlb_mod(struct Trapframe *tf) {
 	}
 	tf->sscratch -= sizeof(struct Trapframe);
 	
-	// if the memory in UXSTACKTOP has not been alloc...
-	if (page_lookup(cur_pgdir, tf->sscratch, NULL) == NULL)
-		passive_alloc(tf->sscratch, cur_pgdir, curenv->env_asid);
-
 	*(struct Trapframe *)tf->sscratch = tmp_tf;
 
 	if (curenv->env_user_tlb_mod_entry) {

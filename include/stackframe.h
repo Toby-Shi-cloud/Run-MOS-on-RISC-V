@@ -2,12 +2,12 @@
 #include <mmu.h>
 #include <trap.h>
 
-#ifdef __ASSEMBLER__
 // clang-format off
 .macro SAVE_ALL
-	csrrw	sp, sscratch, sp
+	csrw	sscratch, sp
+	bltz	sp, $1f	// sp < 0 if and only if sp is in kernel address
 	li	sp, KSTACKTOP
-	addi	sp, sp, -TRAPFRAME_SIZE
+$1f:	addi	sp, sp, -TRAPFRAME_SIZE
 	sw	x0, 0(sp)
 	sw	x1, 4(sp)
 	sw	x2, 8(sp)
@@ -100,4 +100,3 @@
 	addi	sp, sp, TRAPFRAME_SIZE
 	csrrw	sp, sscratch, sp
 .endm
-#endif
