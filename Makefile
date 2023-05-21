@@ -24,6 +24,7 @@ endif
 ifeq ($(call lab-ge,5),true)
 	user_modules    += fs
 	targets         += fs-image
+	qemu_flags	+= -global virtio-mmio.force-legacy=false -machine virt -drive file=target/fs.img,if=none,format=raw,id=hd -device virtio-blk-device,drive=hd
 endif
 
 qemu_bin                := qemu-system-riscv32
