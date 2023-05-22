@@ -4,6 +4,7 @@
 #include <pmap.h>
 #include <printk.h>
 #include <trap.h>
+#include <disk.h>
 
 // When build with 'make test lab=?_?', we will replace your 'mips_init' with a generated one from
 // 'tests/lab?_?'.
@@ -16,6 +17,11 @@ void mips_init() {
 
 	// lab2:
 	mips_detect_memory();
+
+	// lab5:
+	virtio_disk_init();
+
+	// lab2:
 	mips_vm_init();
 	page_init();
 
@@ -28,7 +34,7 @@ void mips_init() {
 
 	// lab4:
 	// ENV_CREATE(user_idle);
-	ENV_CREATE(user_selfmap_test);
+	// ENV_CREATE(user_selfmap_test);
 	// ENV_CREATE(user_tltest);
 	// ENV_CREATE(user_fktest);
 	// ENV_CREATE(user_pingpong);

@@ -2,6 +2,7 @@
 #include <mmu.h>
 #include <pmap.h>
 #include <printk.h>
+#include <drivers/virtio.h>
 
 /* These variables are set by mips_detect_memory() */
 static u_long memsize; /* Porting note: max_paddr = memsize + ULIM */
@@ -102,6 +103,10 @@ static void riscv_kvm_map() {
 	// mapping kernel data and freespace...
 	// perm = readable | writable
 	riscv_create_mapping(kernel_pgdir, (u_int)_data, (u_int)_data, ULIM + memsize - (u_int)_data, PTE_R | PTE_W | PTE_G);
+
+	// mapping virtio mmio
+	// perm = readable | writable
+	riscv_create_mapping(kernel_pgdir, VIRTIOBASE, VIRTIOBASE, VIRTIOSIZE, PTE_R | PTE_W | PTE_G);
 
 	// turn on virtual memory
 	u_int satp = SV32MODE | PPN((u_int)(kernel_pgdir));
