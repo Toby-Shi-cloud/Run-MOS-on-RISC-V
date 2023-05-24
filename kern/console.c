@@ -1,6 +1,9 @@
 #include <console.h>
 #include <printk.h>
-#include <types.h>
+#include <mmu.h>
+
+// include sbi_ecall_interface to use the macro needed.
+#include <sbi/sbi_ecall_interface.h>
 
 struct sbiret {
 	u_int error;
@@ -42,20 +45,63 @@ sbi_ecall(u_int ext, u_int fid, u_int arg0, u_int arg1,
 	return res;
 }
 
-#define LegacyEcall(ext, a0, a1, a2) sbi_ecall((ext), 0, (a0), (a1), (a2), 0, 0, 0)
+// Do **NOT** use LegacyEcall anymore
 
 void printcharc(char ch) {
-	panic_on(LegacyEcall(1, ch, 0, 0).error);
+	struct sbiret ret = sbi_ecall(
+		SBI_EXT_DBCN, SBI_EXT_DBCN_CONSOLE_WRITE_BYTE,
+		ch, 0, 0, 0, 0, 0);
+	panic_on(ret.error); // should be no error
+	assert(ret.value == 0); // expect return 0
 }
 
 int scancharc(void) {
-	return LegacyEcall(2, 0, 0, 0).value;
+	char ch;
+	struct sbiret ret = sbi_ecall(
+		SBI_EXT_DBCN, SBI_EXT_DBCN_CONSOLE_READ,
+		1, (u_int)&ch, 0, 0, 0, 0);
+	panic_on(ret.error); // should be no error
+	if (ret.value == 0) {
+		return 0; // read nothing
+	} else if (ret.value == 1) {
+		return ch; // read a byte
+	} else {
+		panic("bad ret.value: %d", ret.value);
+	}
+	return -1;
 }
 
-void halt(void) {
-	panic_on(LegacyEcall(8, 0, 0, 0).error);
+void nputs(const char *str, u_long length) {
+	struct sbiret ret = sbi_ecall(
+		SBI_EXT_DBCN, SBI_EXT_DBCN_CONSOLE_WRITE,
+		length, (u_int)str, 0, 0, 0, 0);
+	panic_on(ret.error); // should be no error
+	assert(ret.value == length); // expect return length
 }
+
+u_long ngets(char *str, u_long length) {
+	struct sbiret ret = sbi_ecall(
+		SBI_EXT_DBCN, SBI_EXT_DBCN_CONSOLE_READ,
+		length, (u_int)str, 0, 0, 0, 0);
+	panic_on(ret.error); // should be no error
+	return ret.value;
+}
+
+void __attribute__((noreturn)) halt(void) {
+	sbi_ecall(
+		SBI_EXT_SRST, SBI_EXT_SRST_RESET,
+		SBI_SRST_RESET_TYPE_SHUTDOWN, SBI_SRST_RESET_REASON_NONE,
+		0, 0, 0, 0);
+	__builtin_unreachable(); // this ecall should not return
+	panic("unreachable code");
+}
+
+// timer
 
 void clock_set_next_event(u_int next_time) {
-	panic_on(LegacyEcall(0, next_time, 0, 0).error);
+	struct sbiret ret = sbi_ecall(
+		SBI_EXT_TIME, SBI_EXT_TIME_SET_TIMER,
+		next_time, 0, 0, 0, 0, 0);
+	panic_on(ret.error); // should be no error
+	assert(ret.value == 0); // expect return 0
 }
