@@ -26,7 +26,7 @@ int init_stack(u_int child, char **argv, u_int *init_sp) {
 	strings = (char *)(UTEMP + BY2PG) - tot;
 	args = (u_int *)(UTEMP + BY2PG - ROUND(tot, 4) - 4 * (argc + 1));
 
-	if ((r = syscall_mem_alloc(0, (void *)UTEMP, PTE_D)) < 0) {
+	if ((r = syscall_mem_alloc(0, (void *)UTEMP, PTE_W)) < 0) {
 		return r;
 	}
 
@@ -70,7 +70,7 @@ int init_stack(u_int child, char **argv, u_int *init_sp) {
 	// Set *init_sp to the initial stack pointer for the child
 	*init_sp = USTACKTOP - UTEMP - BY2PG + (u_int)pargv_ptr;
 
-	if ((r = syscall_mem_map(0, (void *)UTEMP, child, (void *)(USTACKTOP - BY2PG), PTE_D)) <
+	if ((r = syscall_mem_map(0, (void *)UTEMP, child, (void *)(USTACKTOP - BY2PG), PTE_W)) <
 	    0) {
 		goto error;
 	}
@@ -90,7 +90,7 @@ static int spawn_mapper(void *data, u_long va, size_t offset, u_int perm, const 
 	u_int child_id = *(u_int *)data;
 	try(syscall_mem_alloc(child_id, (void *)va, perm));
 	if (src != NULL) {
-		int r = syscall_mem_map(child_id, (void *)va, 0, (void *)UTEMP, perm | PTE_D);
+		int r = syscall_mem_map(child_id, (void *)va, 0, (void *)UTEMP, perm | PTE_W);
 		if (r) {
 			syscall_mem_unmap(child_id, (void *)va);
 			return r;
