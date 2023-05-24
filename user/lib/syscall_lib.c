@@ -65,12 +65,6 @@ int syscall_cgetc() {
 	return msyscall(SYS_cgetc);
 }
 
-int syscall_write_dev(void *va, u_int dev, u_int len) {
-	/* Exercise 5.2: Your code here. (1/2) */
-
-}
-
-int syscall_read_dev(void *va, u_int dev, u_int len) {
-	/* Exercise 5.2: Your code here. (2/2) */
-
+int syscall_dev_req(int dev, void *req) {
+	return msyscall(SYS_dev_req, dev, req);
 }

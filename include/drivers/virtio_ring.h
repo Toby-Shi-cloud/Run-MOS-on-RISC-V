@@ -56,27 +56,26 @@
 
 // This many virtio descriptors.
 // Must be a power of two.
-#define VIRTIO_QUEUE_NUM 16
+#define VIRTIO_QUEUE_NUM 32
 
 /* Virtio ring descriptors: 16 bytes.  These can chain together via "next". */
 struct vring_desc {
 	/* Address (guest-physical). */
-	u_long addr;
+	uint64_t addr;
 	/* Length. */
 	uint32_t len;
 	/* The flags as indicated above. */
 	uint16_t flags;
 	/* We chain unused descriptors via this, too */
 	uint16_t next;
-        /* No used (for align reason). */
-	u_char _pad[4];
 };
 
 struct vring_avail {
 	uint16_t flags;
 	uint16_t idx;
 	uint16_t ring[VIRTIO_QUEUE_NUM];
-};
+	uint16_t used_event;
+} __attribute__((packed));
 
 /* u32 is used here for ids for padding reasons. */
 struct vring_used_elem {
@@ -90,7 +89,8 @@ struct vring_used {
 	uint16_t flags;
 	uint16_t idx;
 	struct vring_used_elem ring[VIRTIO_QUEUE_NUM];
-};
+	uint16_t avail_event;
+} __attribute__((packed));
 
 struct vring {
 	/* A set (not a ring) of DMA descriptors, with which the driver 
@@ -115,7 +115,17 @@ struct vring {
 	/* A bitmap to indicate if a specific DMA descriptor is free.
 	 * (desc[i]) is free iff (desc_free_bitmap & (1 << i)).
 	 */
-	uint16_t desc_free_bitmap;
+	uint32_t desc_free_bitmap;
+
+	/* Disk command headers. one-for-one with descriptors,
+	 * for convenience.
+	 */
+	struct virtio_blk_outhdr *outhdr;
+
+	/* struct vring_used's idx for host. desc between used_idx and idx
+	 * is for driver to handle.
+	 */
+	uint16_t used_idx;
 };
 
 /* Alignment requirements for vring elements.
@@ -126,9 +136,10 @@ struct vring {
 #define VRING_DESC_ALIGN_SIZE 16
 
 _Static_assert(sizeof(struct vring_desc) == 16);
-_Static_assert(sizeof(struct vring_avail) == 4 + 2 * VIRTIO_QUEUE_NUM);
+_Static_assert(sizeof(struct vring_avail) == 6 + 2 * VIRTIO_QUEUE_NUM);
 _Static_assert(sizeof(struct vring_used_elem) == 8);
-_Static_assert(sizeof(struct vring_used) == 4 + 8 * VIRTIO_QUEUE_NUM);
+_Static_assert(sizeof(struct vring_used) == 6 + 8 * VIRTIO_QUEUE_NUM);
+_Static_assert(sizeof(uint32_t) * 8 >= VIRTIO_QUEUE_NUM);
 
 /* The standard layout for the ring is a continuous chunk of memory which looks
  * like this.  We assume num is a power of 2.

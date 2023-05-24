@@ -64,7 +64,7 @@ void test_fs() {
 	u_int *bits;
 	struct File *f;
 	// back up bitmap
-	if ((r = syscall_mem_alloc(0, (void *)UTEMP, PTE_D)) < 0) {
+	if ((r = syscall_mem_alloc(0, (void *)UTEMP, PTE_W)) < 0) {
 		user_panic("syscall_mem_alloc: %e", r);
 	}
 	bits = (u_int *)UTEMP;

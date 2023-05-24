@@ -127,7 +127,7 @@ int dup(int oldfdnum, int newfdnum) {
 	newfd = (struct Fd *)INDEX2FD(newfdnum);
 	ova = fd2data(oldfd);
 	nva = fd2data(newfd);
-	if ((r = syscall_mem_map(0, oldfd, 0, newfd, vpt[VPN(oldfd)] & (PTE_D | PTE_LIBRARY))) <
+	if ((r = syscall_mem_map(0, oldfd, 0, newfd, vpt[VPN(oldfd)] & (PTE_W | PTE_LIBRARY))) <
 	    0) {
 		goto err;
 	}
@@ -139,7 +139,7 @@ int dup(int oldfdnum, int newfdnum) {
 			if (pte & PTE_V) {
 				// should be no error here -- pd is already allocated
 				if ((r = syscall_mem_map(0, (void *)(ova + i), 0, (void *)(nva + i),
-							 pte & (PTE_D | PTE_LIBRARY))) < 0) {
+							 pte & (PTE_W | PTE_LIBRARY))) < 0) {
 					goto err;
 				}
 			}

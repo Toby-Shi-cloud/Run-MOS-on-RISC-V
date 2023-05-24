@@ -17,13 +17,11 @@ void mips_init() {
 
 	// lab2:
 	mips_detect_memory();
+	mips_vm_init();
+	page_init();
 
 	// lab5:
 	virtio_disk_init();
-
-	// lab2:
-	mips_vm_init();
-	page_init();
 
 	// lab3:
 	env_init();
@@ -44,7 +42,7 @@ void mips_init() {
 
 	// lab5:
 	// ENV_CREATE(user_fstest);
-	// ENV_CREATE(fs_serv);  // This must be the second env!
+	ENV_CREATE(fs_serv);  // This must be the second env!
 	// ENV_CREATE(user_devtst);
 
 	// lab3:

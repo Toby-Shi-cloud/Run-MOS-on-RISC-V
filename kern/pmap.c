@@ -106,7 +106,7 @@ static void riscv_kvm_map() {
 
 	// mapping virtio mmio
 	// perm = readable | writable
-	riscv_create_mapping(kernel_pgdir, VIRTIOBASE, VIRTIOBASE, VIRTIOSIZE, PTE_R | PTE_W | PTE_G);
+	riscv_create_mapping(kernel_pgdir, KSEG1 + VIRTIOBASE, VIRTIOBASE, VIRTIOSIZE, PTE_R | PTE_W | PTE_G);
 
 	// turn on virtual memory
 	u_int satp = SV32MODE | PPN((u_int)(kernel_pgdir));

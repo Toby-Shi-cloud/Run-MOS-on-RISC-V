@@ -52,7 +52,7 @@ int open_alloc(struct Open **o) {
 	for (i = 0; i < MAXOPEN; i++) {
 		switch (pageref(opentab[i].o_ff)) {
 		case 0:
-			if ((r = syscall_mem_alloc(0, opentab[i].o_ff, PTE_D | PTE_LIBRARY)) < 0) {
+			if ((r = syscall_mem_alloc(0, opentab[i].o_ff, PTE_W | PTE_LIBRARY)) < 0) {
 				return r;
 			}
 		case 1:
@@ -113,7 +113,7 @@ void serve_open(u_int envid, struct Fsreq_open *rq) {
 	ff->f_fd.fd_omode = o->o_mode;
 	ff->f_fd.fd_dev_id = devfile.dev_id;
 
-	ipc_send(envid, 0, o->o_ff, PTE_D | PTE_LIBRARY);
+	ipc_send(envid, 0, o->o_ff, PTE_W | PTE_LIBRARY);
 }
 
 void serve_map(u_int envid, struct Fsreq_map *rq) {
@@ -134,7 +134,7 @@ void serve_map(u_int envid, struct Fsreq_map *rq) {
 		return;
 	}
 
-	ipc_send(envid, 0, blk, PTE_D | PTE_LIBRARY);
+	ipc_send(envid, 0, blk, PTE_W | PTE_LIBRARY);
 }
 
 void serve_set_size(u_int envid, struct Fsreq_set_size *rq) {

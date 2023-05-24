@@ -59,7 +59,7 @@ int dirty_block(u_int blockno) {
 		return 0;
 	}
 
-	return syscall_mem_map(0, va, 0, va, PTE_D | PTE_DIRTY);
+	return syscall_mem_map(0, va, 0, va, PTE_W | PTE_DIRTY);
 }
 
 // Overview:
@@ -72,7 +72,7 @@ void write_block(u_int blockno) {
 
 	// Step2: write data to IDE disk. (using ide_write, and the diskno is 0)
 	void *va = diskaddr(blockno);
-	ide_write(0, blockno * SECT2BLK, va, SECT2BLK);
+	ide_write(DISKNO, blockno * SECT2BLK, va, SECT2BLK);
 }
 
 // Overview:
@@ -121,8 +121,8 @@ int read_block(u_int blockno, void **blk, u_int *isnew) {
 		if (isnew) {
 			*isnew = 1;
 		}
-		syscall_mem_alloc(0, va, PTE_D);
-		ide_read(0, blockno * SECT2BLK, va, SECT2BLK);
+		syscall_mem_alloc(0, va, PTE_W);
+		ide_read(DISKNO, blockno * SECT2BLK, va, SECT2BLK);
 	}
 
 	// Step 5: if blk != NULL, assign 'va' to '*blk'.
@@ -142,10 +142,10 @@ int map_block(u_int blockno) {
 		return 0;
 	}
 
-	// Step 2: Alloc a page in permission 'PTE_D' via syscall.
+	// Step 2: Alloc a page in permission 'PTE_W' via syscall.
 	// Hint: Use 'diskaddr' for the virtual address.
 	/* Exercise 5.7: Your code here. (2/5) */
-	return syscall_mem_alloc(0, diskaddr(blockno), PTE_D);
+	return syscall_mem_alloc(0, diskaddr(blockno), PTE_W);
 }
 
 // Overview:

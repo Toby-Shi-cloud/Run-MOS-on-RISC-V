@@ -22,7 +22,7 @@ u_char fsipcbuf[BY2PG] __attribute__((aligned(BY2PG)));
 static int fsipc(u_int type, void *fsreq, void *dstva, u_int *perm) {
 	u_int whom;
 	// Our file system server must be the 2nd env.
-	ipc_send(envs[1].env_id, type, fsreq, PTE_D);
+	ipc_send(envs[1].env_id, type, fsreq, PTE_W);
 	return ipc_recv(&whom, dstva, perm);
 }
 
@@ -70,7 +70,7 @@ int fsipc_map(u_int fileid, u_int offset, void *dstva) {
 		return r;
 	}
 
-	if ((perm & ~(PTE_D | PTE_LIBRARY)) != (PTE_V)) {
+	if ((perm & ~(PTE_W | PTE_LIBRARY)) != (PTE_V)) {
 		user_panic("fsipc_map: unexpected permissions %08x for dstva %08x", perm, dstva);
 	}
 

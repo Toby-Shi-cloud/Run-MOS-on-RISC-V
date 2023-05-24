@@ -2,10 +2,10 @@
 #include <lib.h>
 #include <mmu.h>
 
-#define PTE_DIRTY 0x0002 // file system block cache is dirty
+#define PTE_DIRTY PTE_D // file system block cache is dirty
 
 /* IDE disk number to look on for our file system */
-#define DISKNO 1
+#define DISKNO 8
 
 #define BY2SECT 512		    /* Bytes per disk sector */
 #define SECT2BLK (BY2BLK / BY2SECT) /* sectors to a block */

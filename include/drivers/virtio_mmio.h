@@ -29,4 +29,7 @@
 #define VIRTIO_MMIO_QUEUE_USED_HIGH     0x0a4 // (W) Virtual queue’s Used Ring physical address (higher 32 bit).
 #define VIRTIO_MMIO_CONFIG_GENERERATION 0x0fc // (R) Configuration atomicity value.
 
+// a big region for specific configurations
+#define VIRTIO_MMIO_CONFIG_REGION       0x100 // (RW) Configuration region.
+
 #endif /* _DRIVERS_VIRTIO_MMIO_H_ */
