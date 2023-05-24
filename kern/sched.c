@@ -1,6 +1,7 @@
 #include <env.h>
 #include <pmap.h>
 #include <printk.h>
+#include <disk.h>
 
 /* Overview:
  *   Implement a round-robin scheduling to select a runnable env and schedule it using 'env_run'.
@@ -17,6 +18,11 @@
 void schedule(int yield) {
 	static int count = 0; // remaining time slices of current env
 	struct Env *e = curenv;
+
+#if !defined(LAB) || LAB >= 5
+	// To recycle the disk descriptors from vring_used.
+	virtio_disk_intr();
+#endif
 
 	/* We always decrease the 'count' by 1.
 	 *

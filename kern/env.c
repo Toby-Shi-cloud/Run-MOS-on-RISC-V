@@ -171,7 +171,7 @@ void env_init(void) {
 
 	/*
 	 * We want to map 'UPAGES' and 'UENVS' to *every* user space with PTE_G permission (without
-	 * PTE_D), then user programs can read (but cannot write) kernel data structures 'pages' and
+	 * PTE_W), then user programs can read (but cannot write) kernel data structures 'pages' and
 	 * 'envs'.
 	 *
 	 * Here we first map them into the *template* page directory 'base_pgdir'.

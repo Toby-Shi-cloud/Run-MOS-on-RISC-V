@@ -20,8 +20,7 @@ enum {
 	SYS_ipc_try_send,
 	SYS_ipc_recv,
 	SYS_cgetc,
-	SYS_write_dev,
-	SYS_read_dev,
+	SYS_dev_req,
 	MAX_SYSNO,
 };
 

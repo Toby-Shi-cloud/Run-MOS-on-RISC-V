@@ -13,3 +13,7 @@ endif
 ifeq ($(call lab-ge,4), true)
 	targets     += syscall_all.o
 endif
+
+ifeq ($(call lab-ge,5), true)
+	targets     += disk_driver.o
+endif

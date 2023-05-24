@@ -51,12 +51,11 @@ void do_tlb_miss(struct Trapframe *tf) {
 	}
 	if (tf->scause == 15) { // Store/AMO page fault
 		// alloc a page...
-		//todo maybe it's unsafe.
 		passive_alloc(addr, cur_pgdir, curenv->env_asid);
 		return;
 	} else if (tf->scause == 13) { // Load page fault
-		if (addr == USTACKTOP - BY2PG) {
-			// init stack
+		if (addr >= UTEMP && addr < USTACKTOP) {
+			// alloc a page...
 			passive_alloc(addr, cur_pgdir, curenv->env_asid);
 			return;
 		}
@@ -80,6 +79,11 @@ void do_tlb_miss(struct Trapframe *tf) {
 		}
 		pte[PDX(UVPT)] = ADDR_PTE(cur_pgdir) | PTE_V | PTE_R | PTE_U;
 		cur_pgdir[PDX(UVPT)] = ADDR_PTE(kva) | PTE_V;
+		
+		int pte_idx = (addr - UVPT) / BY2PG;
+		if (!(cur_pgdir[pte_idx] & PTE_V)) {
+			panic("not a valid pte");
+		}
 		return;
 	}
 	panic("bad addr");

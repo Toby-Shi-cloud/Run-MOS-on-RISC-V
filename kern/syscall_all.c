@@ -1,6 +1,7 @@
 #include <env.h>
 #include <mmu.h>
 #include <pmap.h>
+#include <disk.h>
 #include <printk.h>
 #include <sched.h>
 #include <syscall.h>
@@ -414,6 +415,7 @@ int sys_ipc_try_send(u_int envid, u_int value, u_int srcva, u_int perm) {
 	}
 
 	/* Step 4: Set the target's ipc fields. */
+	if (perm & PTE_W) perm |= PTE_R;
 	e->env_ipc_value = value;
 	e->env_ipc_from = curenv->env_id;
 	e->env_ipc_perm = PTE_U | PTE_V | perm;
@@ -448,51 +450,31 @@ int sys_cgetc(void) {
 }
 
 /* Overview:
- *  This function is used to write data at 'va' with length 'len' to a device physical address
- *  'pa'. Remember to check the validity of 'va' and 'pa' (see Hint below);
- *
- *  'va' is the starting address of source data, 'len' is the
- *  length of data (in bytes), 'pa' is the physical address of
- *  the device (maybe with a offset).
+ *  This function is used to send a request to a device.
+ *  Remember to check the validity of request.
+ *  The address of the req must be aligned by BY2PAGE.
  *
  * Post-Condition:
- *  Data within [va, va+len) is copied to the physical address 'pa'.
+ *  The req will be send through the specific driver.
  *  Return 0 on success.
- *  Return -E_INVAL on bad address.
- *
- * Hint: Use the unmapped and uncached segment in kernel address space (KSEG1) to perform MMIO.
- * Hint: You can use 'is_illegal_va_range' to validate 'va'.
- * Hint: You MUST use 'memcpy' to copy data after checking the validity.
- *
- *  All valid device and their physical address ranges:
- *	* ---------------------------------*
- *	|   device   | start addr | length |
- *	* -----------+------------+--------*
- *	|  console   | 0x10000000 | 0x20   | (dev_cons.h)
- *	|  IDE disk  | 0x13000000 | 0x4200 | (dev_disk.h)
- *	|    rtc     | 0x15000000 | 0x200  | (dev_rtc.h)
- *	* ---------------------------------*
+ *  Return -E_INVAL on bad request or bad device.
+ *  Return -E_NO_RING_DESC on device is busy, and the
+ *  caller should try again later.
  */
-int sys_write_dev(u_int va, u_int pa, u_int len) {
-	/* Exercise 5.1: Your code here. (1/2) */
-
-	return 0;
-}
-
-/* Overview:
- *  This function is used to read data from a device physical address.
- *  Remember to check the validity of addresses (same as in 'sys_write_dev').
- *
- * Post-Condition:
- *  Data at 'pa' is copied from device to [va, va+len).
- *  Return 0 on success.
- *  Return -E_INVAL on bad address.
- *
- * Hint: You MUST use 'memcpy' to copy data after checking the validity.
- */
-int sys_read_dev(u_int va, u_int pa, u_int len) {
-	/* Exercise 5.1: Your code here. (2/2) */
-
+int sys_dev_req(int dev, u_long req) {
+#if !defined(LAB) || LAB >= 5
+	if (req & 0xFFF || is_illegal_va(req)) {
+		return -E_INVAL;
+	}
+	u_long pa = va2pa(cur_pgdir, req);
+	if (pa < 0) return -E_INVAL;
+	switch (dev) {
+	case 8:
+		return virtio_disk_req((struct virtio_blk_req *)pa);
+	default:
+		return -E_INVAL;
+	}
+#endif
 	return 0;
 }
 
@@ -513,8 +495,7 @@ void *syscall_table[MAX_SYSNO] = {
     [SYS_ipc_try_send] = sys_ipc_try_send,
     [SYS_ipc_recv] = sys_ipc_recv,
     [SYS_cgetc] = sys_cgetc,
-    [SYS_write_dev] = sys_write_dev,
-    [SYS_read_dev] = sys_read_dev,
+    [SYS_dev_req] = sys_dev_req,
 };
 
 /* Overview:

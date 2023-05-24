@@ -24,6 +24,9 @@ endif
 ifeq ($(call lab-ge,5),true)
 	user_modules    += fs
 	targets         += fs-image
+	qemu_flags	+= -global virtio-mmio.force-legacy=false
+	qemu_flags	+= -drive file=${user_disk},if=none,format=raw,id=hd0
+	qemu_flags	+= -device virtio-blk-device,drive=hd0
 endif
 
 qemu_bin                := qemu-system-riscv32
@@ -88,3 +91,6 @@ run:
 objdump:
 	@find * \( -name '*.b' -o -path $(mos_elf) \) -exec sh -c \
 	'$(CROSS_COMPILE)objdump {} -aldS > {}.objdump && echo {}.objdump' ';'
+
+sbi:
+	$(MAKE) --directory=opensbi install CROSS_COMPILE=riscv64-unknown-elf- PLATFORM_RISCV_XLEN=32 PLATFORM=generic BUILD_INFO=y

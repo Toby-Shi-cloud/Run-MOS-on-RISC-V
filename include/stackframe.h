@@ -50,6 +50,8 @@ $1f:	addi	sp, sp, -TRAPFRAME_SIZE
 	sw	t0, 140(sp)
 	csrr	t0, stval
 	sw	t0, 144(sp)
+	csrr	t0, sip
+	sw	t0, 148(sp)
 .endm
 /*
  * Note that we restore the IE flags from stack. This means
@@ -66,6 +68,7 @@ $1f:	addi	sp, sp, -TRAPFRAME_SIZE
 	csrw	sepc, t0
 	lw	t0, 144(sp)
 	csrw	stval, t0
+	// do not write sip back
 	lw	x1, 4(sp)
 	lw	x3, 12(sp)
 	lw	x4, 16(sp)

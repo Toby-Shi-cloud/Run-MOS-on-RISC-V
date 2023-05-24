@@ -44,6 +44,11 @@
 // File not a valid executable
 #define E_NOT_EXEC 13
 
+// Driver error codes
+
+// No free virtio ring descriptors
+#define E_NO_RING_DESC 14
+
 /*
  * A quick wrapper around function calls to propagate errors.
  * Use this with caution, as it leaks resources we've acquired so far.

@@ -66,8 +66,7 @@ void syscall_panic(const char *msg) __attribute__((noreturn));
 int syscall_ipc_try_send(u_int envid, u_int value, const void *srcva, u_int perm);
 int syscall_ipc_recv(void *dstva);
 int syscall_cgetc();
-int syscall_write_dev(void *, u_int, u_int);
-int syscall_read_dev(void *, u_int, u_int);
+int syscall_dev_req(int dev, void *req);
 
 // ipc.c
 void ipc_send(u_int whom, u_int val, const void *srcva, u_int perm);

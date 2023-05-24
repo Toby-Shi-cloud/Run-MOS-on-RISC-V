@@ -2,6 +2,7 @@
 #include <mmu.h>
 #include <pmap.h>
 #include <printk.h>
+#include <drivers/virtio.h>
 
 /* These variables are set by mips_detect_memory() */
 static u_long memsize; /* Porting note: max_paddr = memsize + ULIM */
@@ -102,6 +103,10 @@ static void riscv_kvm_map() {
 	// mapping kernel data and freespace...
 	// perm = readable | writable
 	riscv_create_mapping(kernel_pgdir, (u_int)_data, (u_int)_data, ULIM + memsize - (u_int)_data, PTE_R | PTE_W | PTE_G);
+
+	// mapping virtio mmio
+	// perm = readable | writable
+	riscv_create_mapping(kernel_pgdir, KSEG1 + VIRTIOBASE, VIRTIOBASE, VIRTIOSIZE, PTE_R | PTE_W | PTE_G);
 
 	// turn on virtual memory
 	u_int satp = SV32MODE | PPN((u_int)(kernel_pgdir));
@@ -267,6 +272,7 @@ int page_insert(Pde *pgdir, u_int asid, struct Page *pp, u_long va, u_int perm) 
 
 	/* Step 1: Get corresponding page table entry. */
 	pgdir_walk(pgdir, va, 0, &pte);
+	if (perm & PTE_W) perm |= PTE_R; // any page that has write perm should also have read perm
 
 	if (pte && (*pte & PTE_V)) {
 		if (pa2page(PTE_ADDR(*pte)) != pp) {
