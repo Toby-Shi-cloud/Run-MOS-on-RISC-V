@@ -13,5 +13,5 @@ int pageref(void *v) {
 		return 0;
 	}
 
-	return pages[PPN(pte)].pp_ref;
+	return pages[PA2IDX(PTE_ADDR(pte))].pp_ref;
 }

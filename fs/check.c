@@ -21,11 +21,11 @@ static void fs_check() {
 	u_int *bits;
 
 	// back up bitmap
-	if ((r = syscall_mem_alloc(0, (void *)BY2PG, PTE_W)) < 0) {
+	if ((r = syscall_mem_alloc(0, (void *)UTEMP, PTE_W)) < 0) {
 		user_panic("syscall_mem_alloc: %e", r);
 	}
 
-	bits = (u_int *)BY2PG;
+	bits = (u_int *)UTEMP;
 	memcpy(bits, bitmap, BY2PG);
 
 	// allocate block

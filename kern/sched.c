@@ -19,8 +19,10 @@ void schedule(int yield) {
 	static int count = 0; // remaining time slices of current env
 	struct Env *e = curenv;
 
+#if !defined(LAB) || LAB >= 5
 	// To recycle the disk descriptors from vring_used.
 	virtio_disk_intr();
+#endif
 
 	/* We always decrease the 'count' by 1.
 	 *

@@ -16,6 +16,7 @@
 // Page number field of an address
 #define PPN(va) (((u_long)(va)) >> 12)
 #define VPN(va) (((u_long)(va)) >> 12)
+#define PA2IDX(pa) PPN((pa) - KERNBASE)
 
 #define SV32MODE 0x80000000U
 
@@ -157,8 +158,8 @@ typedef u_long Pte;
 // translates from physical address to kernel virtual address
 #define KADDR(pa)                                                                                  \
 	({                                                                                         \
-		u_long ppn = PPN(pa) - PPN(KERNBASE);                                              \
-		if (ppn >= npage) {                                                                \
+		u_long idx = PA2IDX(pa);                                                           \
+		if (idx >= npage) {                                                                \
 			panic("KADDR called with invalid pa %08lx", (u_long)pa);                   \
 		}                                                                                  \
 		(pa);                                                                              \

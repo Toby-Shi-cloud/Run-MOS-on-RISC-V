@@ -168,6 +168,5 @@ int main() {
 
 	debugf("4 OK\n");
 
-	syscall_read_dev(&r, 0x10000010, 4);
 	return 0;
 }

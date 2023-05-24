@@ -71,7 +71,7 @@ int fd_lookup(int fdnum, struct Fd **fd) {
 
 	va = INDEX2FD(fdnum);
 
-	if ((vpt[va / BY2PG] & PTE_V) != 0) { // the fd is used
+	if ((vpd[PDX(va)] & PTE_V) && (vpt[va / BY2PG] & PTE_V)) { // the fd is used
 		*fd = (struct Fd *)va;
 		return 0;
 	}

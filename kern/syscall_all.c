@@ -415,6 +415,7 @@ int sys_ipc_try_send(u_int envid, u_int value, u_int srcva, u_int perm) {
 	}
 
 	/* Step 4: Set the target's ipc fields. */
+	if (perm & PTE_W) perm |= PTE_R;
 	e->env_ipc_value = value;
 	e->env_ipc_from = curenv->env_id;
 	e->env_ipc_perm = PTE_U | PTE_V | perm;
@@ -461,6 +462,7 @@ int sys_cgetc(void) {
  *  caller should try again later.
  */
 int sys_dev_req(int dev, u_long req) {
+#if !defined(LAB) || LAB >= 5
 	if (req & 0xFFF || is_illegal_va(req)) {
 		return -E_INVAL;
 	}
@@ -472,6 +474,8 @@ int sys_dev_req(int dev, u_long req) {
 	default:
 		return -E_INVAL;
 	}
+#endif
+	return 0;
 }
 
 void *syscall_table[MAX_SYSNO] = {

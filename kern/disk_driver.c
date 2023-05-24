@@ -116,7 +116,7 @@ void virtio_disk_init(void) {
 
 	printk("disk_driver.c: virtio_disk_init success\n");
 
-	virtio_read_config();
+	// virtio_read_config();
 }
 
 void virtio_read_config(void) {
@@ -145,7 +145,7 @@ static int alloc_desc() {
 	__builtin_unreachable();
 }
 
-static void free_desc(uint16_t idx) {
+static void free_desc(int idx) {
 	assert(idx >= 0 && idx < VIRTIO_QUEUE_NUM);
 	assert(!(disk.desc_free_bitmap & (1 << idx)));
 	disk.desc_free_bitmap |= 1 << idx;
@@ -164,6 +164,16 @@ static int alloc_3_desc(int idx[]) {
 	return 0;
 }
 
+static void free_chain(int idx) {
+	uint16_t last_flag, last_next;
+	do {
+		last_flag = disk.desc[idx].flags;
+		last_next = disk.desc[idx].next;
+		free_desc(idx);
+		idx = last_next;
+	} while (last_flag & VRING_DESC_F_NEXT);
+}
+
 // Should not do busy waiting or yield in kernel.
 // Because when all runnable env are blocked in kernel, the interrupt
 // will never happened, making the kernel a dead loop.
@@ -178,6 +188,7 @@ int virtio_disk_req(struct virtio_blk_req *req) {
 
 	int idx[3];
 	try(alloc_3_desc(idx));
+	// printk("disk.desc_free_bitmap: %08x\n", disk.desc_free_bitmap);
 
 	struct virtio_blk_outhdr *outhdr = &disk.outhdr[idx[0]];
 	if (req->write) {
@@ -221,15 +232,11 @@ int virtio_disk_req(struct virtio_blk_req *req) {
 	__sync_synchronize();
 
 	// notify the device
-	printk("value of avail flags: %d\n", disk.avail->flags);
-	printk("value of used flags: %d\n", disk.used->flags);
 	if (disk.used->flags == 0) {
 		*R(VIRTIO_MMIO_QUEUE_NOTIFY) = 0;
 	} else if (disk.used->flags != 1) {
 		panic("unexpected value of flags: %d", disk.used->flags);
 	}
-
-	printk("$driver: message sent...\n");
 	return 0;
 }
 
@@ -237,9 +244,13 @@ void virtio_disk_intr(void) {
 	if (*R(VIRTIO_MMIO_INTERRUPT_STATUS)) {
 		printk("interrupt status: %d\n", *R(VIRTIO_MMIO_INTERRUPT_STATUS));
 		*R(VIRTIO_MMIO_INTERRUPT_ACK) = *R(VIRTIO_MMIO_INTERRUPT_STATUS) & 0x3;
+		__sync_synchronize();
 	}
-	__sync_synchronize();
-	if (disk.used_idx != disk.used->idx) {
-		panic("Hi there...\n");
+	while (disk.used_idx != disk.used->idx) {
+		__sync_synchronize();
+		int id = disk.used->ring[disk.used_idx % VIRTIO_QUEUE_NUM].id;
+		free_chain(id);
+		disk.used_idx++;
+		// printk("disk.used_idx = %d\n", (int)disk.used_idx);
 	}
 }

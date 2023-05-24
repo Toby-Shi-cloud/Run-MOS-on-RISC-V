@@ -70,7 +70,7 @@ int fsipc_map(u_int fileid, u_int offset, void *dstva) {
 		return r;
 	}
 
-	if ((perm & ~(PTE_W | PTE_LIBRARY)) != (PTE_V)) {
+	if ((perm & ~(PTE_R | PTE_W | PTE_LIBRARY)) != (PTE_V | PTE_U)) {
 		user_panic("fsipc_map: unexpected permissions %08x for dstva %08x", perm, dstva);
 	}
 

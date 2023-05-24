@@ -272,6 +272,7 @@ int page_insert(Pde *pgdir, u_int asid, struct Page *pp, u_long va, u_int perm) 
 
 	/* Step 1: Get corresponding page table entry. */
 	pgdir_walk(pgdir, va, 0, &pte);
+	if (perm & PTE_W) perm |= PTE_R; // any page that has write perm should also have read perm
 
 	if (pte && (*pte & PTE_V)) {
 		if (pa2page(PTE_ADDR(*pte)) != pp) {
