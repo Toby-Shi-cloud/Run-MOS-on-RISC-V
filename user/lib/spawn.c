@@ -184,7 +184,7 @@ int spawn(char *prog, char **argv) {
 
 	struct Trapframe tf = envs[ENVX(child)].env_tf;
 	tf.sepc = entrypoint;
-	tf.regs[29] = sp;
+	tf.sscratch = sp;
 	if ((r = syscall_set_trapframe(child, &tf)) != 0) {
 		goto err2;
 	}
@@ -224,8 +224,21 @@ err:
 	return r;
 }
 
+#define MAXARGS 128
 int spawnl(char *prog, char *args, ...) {
-	// Thanks to MIPS calling convention, the layout of arguments on the stack
-	// are straightforward.
-	return spawn(prog, &args);
+	// Porting note: arguments convention in riscv is not the same as mips...
+	// and even not in stack...
+	va_list ap;
+	va_start(ap, args);
+	char *arr[MAXARGS];
+	char **idx = arr;
+	*idx++ = args;
+	while (args) {
+		args = va_arg(ap, char *);
+		*idx++ = args;
+	}
+	int r = spawn(prog, arr);
+	va_end(ap);
+	return r;
+	// return spawn(prog, &args);
 }
