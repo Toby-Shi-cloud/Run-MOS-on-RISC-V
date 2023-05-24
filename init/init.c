@@ -38,7 +38,7 @@ void mips_init() {
 	// ENV_CREATE(user_pingpong);
 
 	// lab6:
-	// ENV_CREATE(user_icode);  // This must be the first env!
+	ENV_CREATE(user_icode);  // This must be the first env!
 
 	// lab5:
 	// ENV_CREATE(user_fstest);
