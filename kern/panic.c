@@ -19,9 +19,9 @@ void _panic(const char *file, int line, const char *func, const char *fmt, ...) 
 	va_start(ap, fmt);
 	vprintfmt(outputk, NULL, fmt, ap);
 	va_end(ap);
+	printcharc('\n');
 
-	printk("\n"
-	       "ra:    %08x  sp:  %08x  Status:  %08x\n"
+	printk("ra:    %08x  sp:  %08x  Status:  %08x\n"
 	       "Cause: %08x  EPC: %08x  TrapVal: %08x\n",
 	       ra, sp, sr, cause, epc, tval);
 

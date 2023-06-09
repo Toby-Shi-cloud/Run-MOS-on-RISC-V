@@ -39,18 +39,28 @@ modules                 += $(user_modules)
 
 .PHONY: all test tools $(modules) clean run dbg objdump fs-image clean-and-all
 
+# `silent' here means `silence kernel (printk)'
 .ONESHELL:
+silent-clean-and-all: CFLAGS += -DSILENCE
+silent-clean-and-all: clean
+	$(MAKE) silent-all
+
 clean-and-all: clean
 	$(MAKE) all
 
 test: export test_dir = tests/lab$(lab)
 test: clean-and-all
 
+silent-all: CFLAGS += -DSILENCE
+silent-all: all
+
+silent-test: CFLAGS += -DSILENCE
+silent-test: test
+
 include mk/tests.mk mk/profiles.mk
 export CC CFLAGS LD LDFLAGS lab
 
-all: $(targets) objdump
-	nm target/mos > target/mos.map
+all: $(targets)
 
 $(target_dir):
 	mkdir -p $@
@@ -80,7 +90,7 @@ clean:
 	find . -name '*.objdump' -exec rm {} ';'
 
 dbg: qemu_flags += -no-reboot -s -S
-dbg: objdump run
+dbg: run
 
 gdb:
 	$(CROSS_COMPILE)gdb --eval-command 'target remote :1234' $(mos_elf)
@@ -88,9 +98,14 @@ gdb:
 run:
 	$(qemu_bin) $(qemu_flags) -kernel $(mos_elf)
 
+ifeq ($(file),)
 objdump:
 	@find * \( -name '*.b' -o -path $(mos_elf) \) -exec sh -c \
 	'$(CROSS_COMPILE)objdump {} -aldS > {}.objdump && echo {}.objdump' ';'
+else
+objdump:
+	$(CROSS_COMPILE)objdump $(file) -aldS > $(file).objdump && echo $(file).objdump
+endif
 
 sbi:
 	$(MAKE) --directory=opensbi install CROSS_COMPILE=riscv64-unknown-elf- PLATFORM_RISCV_XLEN=32 PLATFORM=generic BUILD_INFO=y
