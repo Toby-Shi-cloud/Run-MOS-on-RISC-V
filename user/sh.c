@@ -235,8 +235,8 @@ int main(int argc, char **argv) {
 	}
 	if (argc == 1) {
 		close(0);
-		if ((r = open(argv[1], O_RDONLY)) < 0) {
-			user_panic("open %s: %d", argv[1], r);
+		if ((r = open(argv[0], O_RDONLY)) < 0) {
+			user_panic("open %s: %d", argv[0], r);
 		}
 		user_assert(r == 0);
 	}

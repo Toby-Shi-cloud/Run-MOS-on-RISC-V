@@ -224,21 +224,6 @@ err:
 	return r;
 }
 
-#define MAXARGS 128
-int spawnl(char *prog, char *args, ...) {
-	// Porting note: arguments convention in riscv is not the same as mips...
-	// and even not in stack...
-	va_list ap;
-	va_start(ap, args);
-	char *arr[MAXARGS];
-	char **idx = arr;
-	*idx++ = args;
-	while (args) {
-		args = va_arg(ap, char *);
-		*idx++ = args;
-	}
-	int r = spawn(prog, arr);
-	va_end(ap);
-	return r;
-	// return spawn(prog, &args);
-}
+// Porting note: arguments convention in riscv is not the same as mips...
+// Therefore, spawnl will be writen directly in riscv assembly
+// int spawnl(char *prog, char *args, ...)

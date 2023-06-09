@@ -60,7 +60,7 @@ void do_tlb_miss(struct Trapframe *tf) {
 			return;
 		}
 		if (addr < UVPT || addr >= ULIM) {
-			panic("bad addr");
+			panic("addr out of range");
 		}
 		if (curenv->env_pgdir_copy_pa == 0) {
 			panic_on(page_alloc(&p));
@@ -86,7 +86,7 @@ void do_tlb_miss(struct Trapframe *tf) {
 		}
 		return;
 	}
-	panic("bad addr");
+	panic("fetch instr: bad addr");
 }
 
 /* Overview:
