@@ -6,8 +6,10 @@
 // reference: https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/virtio_disk.c
 // also http://docs.oasis-open.org/virtio/virtio/v1.0/cs04/virtio-v1.0-cs04.pdf (p23)
 
-#define R(r) ((volatile u_int *)(KSEG1 + DEV_DISK_ADDRESS + (r)))
 #define GPA(pa) ((uint32_t)(pa))
+
+// DO NOT add KSEG1 when init, because vm haven't been init yet.
+#define R(r) ((volatile u_int *)(DEV_DISK_ADDRESS + (r)))
 
 static struct vring disk;
 
@@ -130,6 +132,9 @@ void virtio_read_config(void) {
 	printk("@blk_size: %d\n", (int)config.blk_size);
 	printk("@min_io_size: %d\n", (int)config.min_io_size);
 }
+
+#undef R
+#define R(r) ((volatile u_int *)(KSEG1 + DEV_DISK_ADDRESS + (r)))
 
 static int alloc_desc() {
 	if (disk.desc_free_bitmap == 0) {

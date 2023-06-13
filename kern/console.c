@@ -40,7 +40,7 @@ sbi_ecall(u_int ext, u_int fid, u_int arg0, u_int arg1,
 		[fid] "r" (fid),
 		[eid] "r" (ext)
 		: "a0", "a1", "a2", "a3",
-		"a4", "a5", "a6", "a7"
+		"a4", "a5", "a6", "a7", "memory"
 	);
 	return res;
 }
@@ -88,10 +88,20 @@ u_long ngets(char *str, u_long length) {
 }
 
 void __attribute__((noreturn)) halt(void) {
-	sbi_ecall(
-		SBI_EXT_SRST, SBI_EXT_SRST_RESET,
-		SBI_SRST_RESET_TYPE_SHUTDOWN, SBI_SRST_RESET_REASON_NONE,
-		0, 0, 0, 0);
+	// use assembly directly...
+	// if this call sbi_ecall, compiler may optimize out...
+	asm (
+		"li a0, 0\n"
+		"li a1, 0\n"
+		"li a2, 0\n"
+		"li a3, 0\n"
+		"li a4, 0\n"
+		"li a5, 0\n"
+		"li a6, 0\n"
+		// SBI_EXT_SRST = 0x53525354
+		"li a7, 0x53525354\n"
+		"ecall\n"
+	);
 	__builtin_unreachable(); // this ecall should not return
 	panic("unreachable code");
 }

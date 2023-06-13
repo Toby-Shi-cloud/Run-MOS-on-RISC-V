@@ -99,17 +99,6 @@ int fsipc_close(u_int fileid) {
 }
 
 // Overview:
-//  Ask the file server to mark a particular file block dirty.
-int fsipc_dirty(u_int fileid, u_int offset) {
-	struct Fsreq_dirty *req;
-
-	req = (struct Fsreq_dirty *)fsipcbuf;
-	req->req_fileid = fileid;
-	req->req_offset = offset;
-	return fsipc(FSREQ_DIRTY, req, 0, 0);
-}
-
-// Overview:
 //  Ask the file server to delete a file, given its path.
 int fsipc_remove(const char *path) {
 	// Step 1: Check the length of 'path' using 'strlen'.

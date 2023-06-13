@@ -75,11 +75,6 @@ int file_close(struct Fd *fd) {
 	// Set the start address storing the file's content.
 	va = fd2data(fd);
 
-	// Tell the file server the dirty page.
-	for (i = 0; i < size; i += BY2PG) {
-		fsipc_dirty(fileid, i);
-	}
-
 	// Request the file server to close the file with fsipc.
 	if ((r = fsipc_close(fileid)) < 0) {
 		debugf("cannot close the file\n");

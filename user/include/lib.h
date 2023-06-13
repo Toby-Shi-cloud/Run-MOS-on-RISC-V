@@ -95,7 +95,6 @@ int fsipc_open(const char *, u_int, struct Fd *);
 int fsipc_map(u_int, u_int, void *);
 int fsipc_set_size(u_int, u_int);
 int fsipc_close(u_int);
-int fsipc_dirty(u_int, u_int);
 int fsipc_remove(const char *);
 int fsipc_sync(void);
 int fsipc_incref(u_int);

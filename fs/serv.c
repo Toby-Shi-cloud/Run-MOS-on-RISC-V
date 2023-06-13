@@ -180,23 +180,6 @@ void serve_remove(u_int envid, struct Fsreq_remove *rq) {
 	ipc_send(envid, r, NULL, 0);
 }
 
-void serve_dirty(u_int envid, struct Fsreq_dirty *rq) {
-	struct Open *pOpen;
-	int r;
-
-	if ((r = open_lookup(envid, rq->req_fileid, &pOpen)) < 0) {
-		ipc_send(envid, r, 0, 0);
-		return;
-	}
-
-	if ((r = file_dirty(pOpen->o_file, rq->req_offset)) < 0) {
-		ipc_send(envid, r, 0, 0);
-		return;
-	}
-
-	ipc_send(envid, 0, 0, 0);
-}
-
 void serve_sync(u_int envid) {
 	fs_sync();
 	ipc_send(envid, 0, 0, 0);
@@ -231,10 +214,6 @@ void serve(void) {
 
 		case FSREQ_CLOSE:
 			serve_close(whom, (struct Fsreq_close *)REQVA);
-			break;
-
-		case FSREQ_DIRTY:
-			serve_dirty(whom, (struct Fsreq_dirty *)REQVA);
 			break;
 
 		case FSREQ_REMOVE:

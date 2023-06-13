@@ -3,7 +3,7 @@ ENDIAN         := EL
 
 CROSS_COMPILE  := riscv64-unknown-elf-
 CC             := $(CROSS_COMPILE)gcc
-CFLAGS         := --std=gnu99 -march=rv32gc -mabi=ilp32 -Wall -fno-pic -ffreestanding -fno-stack-protector -fno-builtin
+CFLAGS         := --std=gnu99 -march=rv32gc -mabi=ilp32 -Wall -fno-pic -ffreestanding -fno-stack-protector -fno-builtin -Werror
 LD             := $(CROSS_COMPILE)ld
 LDFLAGS        := -static -nostdlib --fatal-warnings -melf32lriscv -Lsbi_bin
 LDLIBS         := -lsbi -lplatsbi

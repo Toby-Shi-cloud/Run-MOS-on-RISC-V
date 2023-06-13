@@ -170,7 +170,7 @@ int read(int fdnum, void *buf, u_int n) {
 
 	// Similar to the 'write' function below.
 	// Step 1: Get 'fd' and 'dev' using 'fd_lookup' and 'dev_lookup'.
-	struct Dev *dev;
+	struct Dev *dev = NULL; // initialize dev to avoid compiler warning
 	struct Fd *fd;
 	/* Exercise 5.10: Your code here. (1/4) */
 	if ((r = fd_lookup(fdnum, &fd)) < 0 || (r = dev_lookup(fd->fd_dev_id, &dev)) < 0) {
@@ -220,7 +220,7 @@ int readn(int fdnum, void *buf, u_int n) {
 
 int write(int fdnum, const void *buf, u_int n) {
 	int r;
-	struct Dev *dev;
+	struct Dev *dev = NULL; // initialize dev to avoid compiler warning
 	struct Fd *fd;
 
 	if ((r = fd_lookup(fdnum, &fd)) < 0 || (r = dev_lookup(fd->fd_dev_id, &dev)) < 0) {

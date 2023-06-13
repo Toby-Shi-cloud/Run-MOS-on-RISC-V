@@ -36,7 +36,7 @@ void *block_is_mapped(u_int blockno) {
 // Overview:
 //  Check if this virtual address is dirty. (check PTE_DIRTY bit)
 int va_is_dirty(void *va) {
-	return vpt[VPN(va)] & PTE_DIRTY;
+	return vpt[VPN(va)] & PTE_D;
 }
 
 // Overview:
@@ -44,22 +44,6 @@ int va_is_dirty(void *va) {
 int block_is_dirty(u_int blockno) {
 	void *va = diskaddr(blockno);
 	return va_is_mapped(va) && va_is_dirty(va);
-}
-
-// Overview:
-//  Mark this block as dirty (cache page has changed and needs to be written back to disk).
-int dirty_block(u_int blockno) {
-	void *va = diskaddr(blockno);
-
-	if (!va_is_mapped(va)) {
-		return -E_NOT_FOUND;
-	}
-
-	if (va_is_dirty(va)) {
-		return 0;
-	}
-
-	return syscall_mem_map(0, va, 0, va, PTE_W | PTE_DIRTY);
 }
 
 // Overview:
@@ -73,6 +57,7 @@ void write_block(u_int blockno) {
 	// Step2: write data to IDE disk. (using ide_write, and the diskno is 0)
 	void *va = diskaddr(blockno);
 	ide_write(DISKNO, blockno * SECT2BLK, va, SECT2BLK);
+	syscall_mem_map(0, va, 0, va, vpt[(u_int)va >> PGSHIFT] & ~PTE_D);
 }
 
 // Overview:
@@ -478,19 +463,6 @@ int file_get_block(struct File *f, u_int filebno, void **blk) {
 }
 
 // Overview:
-//  Mark the offset/BY2BLK'th block dirty in file f.
-int file_dirty(struct File *f, u_int offset) {
-	int r;
-	u_int diskbno;
-
-	if ((r = file_map_block(f, offset / BY2BLK, &diskbno, 0)) < 0) {
-		return r;
-	}
-
-	return dirty_block(diskbno);
-}
-
-// Overview:
 //  Find a file named 'name' in the directory 'dir'. If found, set *file to it.
 //
 // Post-Condition:
@@ -681,6 +653,7 @@ int file_create(char *path, struct File **file) {
 	}
 
 	strcpy(f->f_name, name);
+	f->f_dir = dir;
 	*file = f;
 	return 0;
 }
@@ -781,10 +754,12 @@ void fs_sync(void) {
 //  Close a file.
 void file_close(struct File *f) {
 	// Flush the file itself, if f's f_dir is set, flush it's f_dir.
-	file_flush(f);
-	if (f->f_dir) {
-		file_flush(f->f_dir);
+	while (f) {
+		file_flush(f);
+		f = f->f_dir;
 	}
+	// write super
+	write_block(1);
 }
 
 // Overview:
